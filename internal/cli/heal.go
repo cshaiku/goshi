@@ -73,17 +73,19 @@ func newHealCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-      if !cfg.DryRun {
-      	fmt.Println("The following actions will be executed:")
-      	for _, a := range plan.Actions {
-      		fmt.Printf(" - %v\n", a.Command)
-      	}
+    if !cfg.DryRun {
+    	fmt.Println("The following actions will be executed:")
+    	for _, a := range plan.Actions {
+    		fmt.Printf(" - %v\n", a.Command)
+    	}
 
-      	if !confirmExecution() {
-      		fmt.Println("Aborted.")
-      		return nil
-      	}
-      }
+    	if !cfg.Yes {
+    		if !confirmExecution() {
+    			fmt.Println("Aborted.")
+    			return nil
+    		}
+    	}
+    }
 
       ex := &exec.Executor{
       	DryRun: cfg.DryRun,

@@ -15,6 +15,7 @@ func NewRootCmd() *cobra.Command {
 
 	var modelFlag string
 	var dryRunFlag bool
+  var yesFlag bool
 
 	cmd := &cobra.Command{
 		Use:   "grokgo",
@@ -27,6 +28,10 @@ func NewRootCmd() *cobra.Command {
 			if cmd.Flag("dry-run").Changed {
 				cfg.DryRun = dryRunFlag
 			}
+
+      if cmd.Flag("yes").Changed {
+        cfg.Yes = yesFlag
+      }
 
 			return nil
 		},
@@ -41,6 +46,13 @@ func NewRootCmd() *cobra.Command {
 		true,
 		"do not execute changes, only show what would happen",
 	)
+
+  cmd.PersistentFlags().BoolVar(
+  	&yesFlag,
+  	"yes",
+  	false,
+  	"automatically confirm execution",
+  )
 
 	cmd.Flags().StringVar(
 		&modelFlag,
