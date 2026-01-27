@@ -1,19 +1,19 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
-  "encoding/json"
-
-  "grokgo/internal/config"
-  "grokgo/internal/detect"
+	"grokgo/internal/config"
+	"grokgo/internal/detect"
 	"grokgo/internal/diagnose"
-  "grokgo/internal/exec"
+	"grokgo/internal/exec"
 	"grokgo/internal/repair"
+	"grokgo/internal/verify"
 )
-
 
 func confirmExecution() bool {
 	fmt.Print("Proceed with execution? Type 'yes' to continue: ")
@@ -27,36 +27,38 @@ func confirmExecution() bool {
 	return input == "yes"
 }
 
-
 func newHealCmd(cfg *config.Config) *cobra.Command {
 	return &cobra.Command{
 		Use:   "heal",
-		Short: "Plan repairs for detected environment issues",
+		Short: "Repair detected environment issues",
 		RunE: func(cmd *cobra.Command, args []string) error {
-      if cfg.JSON {
-      	out, err := json.MarshalIndent(map[string]any{
-      		"mode": func() string {
-      			if cfg.DryRun {
-      				return "dry-run"
-      			}
-      			return "execute"
-      		}(),
-      	}, "", "  ")
-      	if err != nil {
-      		return err
-      	}
 
-      	fmt.Println(string(out))
-      	return nil
-      }
+			// --- JSON mode (machine output only) ---
+			if cfg.JSON {
+				mode := "execute"
+				if cfg.DryRun {
+					mode = "dry-run"
+				}
 
-      mode := "DRY-RUN"
-      if !cfg.DryRun {
-        mode = "EXECUTE"
-      }
+				out, err := json.MarshalIndent(map[string]any{
+					"mode": mode,
+				}, "", "  ")
+				if err != nil {
+					return err
+				}
 
-      fmt.Printf("Heal mode: %s\n", mode)
+				fmt.Println(string(out))
+				return nil
+			}
 
+			// --- human banner ---
+			mode := "EXECUTE"
+			if cfg.DryRun {
+				mode = "DRY-RUN"
+			}
+			fmt.Printf("Heal mode: %s\n", mode)
+
+			// --- detect ---
 			d := &detect.BasicDetector{
 				Binaries: []string{
 					"git",
@@ -70,6 +72,7 @@ func newHealCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
+			// --- diagnose ---
 			dg := &diagnose.BasicDiagnoser{}
 			diag, err := dg.Diagnose(res)
 			if err != nil {
@@ -81,6 +84,7 @@ func newHealCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
+			// --- plan ---
 			r := &repair.BasicRepairer{}
 			plan, err := r.Plan(diag)
 			if err != nil {
@@ -92,28 +96,54 @@ func newHealCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-    if !cfg.DryRun {
-    	fmt.Println("The following actions will be executed:")
-    	for _, a := range plan.Actions {
-    		fmt.Printf(" - %v\n", a.Command)
-    	}
+			// --- confirmation gate ---
+			if !cfg.DryRun {
+				fmt.Println("The following actions will be executed:")
+				for _, a := range plan.Actions {
+					fmt.Printf(" - %v\n", a.Command)
+				}
 
-    	if !cfg.Yes {
-    		if !confirmExecution() {
-    			fmt.Println("Aborted.")
-    			return nil
-    		}
-    	}
-    }
+				if !cfg.Yes {
+					if !confirmExecution() {
+						fmt.Println("Aborted.")
+						return nil
+					}
+				}
+			}
 
-      ex := &exec.Executor{
-      	DryRun: cfg.DryRun,
-      }
+			// --- execute ---
+			ex := &exec.Executor{
+				DryRun: cfg.DryRun,
+			}
 
-      if err := ex.Execute(plan); err != nil {
-      	return err
-      }
+			if err := ex.Execute(plan); err != nil {
+				// execution failure = fatal
+				os.Exit(3)
+			}
 
+			// --- verify ---
+			v := &verify.BasicVerifier{
+				Binaries: []string{
+					"git",
+					"curl",
+					"jq",
+				},
+			}
+
+			vr, err := v.Verify()
+			if err != nil {
+				return err
+			}
+
+			if vr.Passed {
+				fmt.Println("✔ verification passed")
+			} else {
+				fmt.Println("✖ verification failed:")
+				for _, f := range vr.Failures {
+					fmt.Println(" -", f)
+				}
+				os.Exit(2)
+			}
 
 			return nil
 		},
