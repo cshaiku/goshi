@@ -16,6 +16,7 @@ func NewRootCmd() *cobra.Command {
 	var modelFlag string
 	var dryRunFlag bool
   var yesFlag bool
+  var jsonFlag bool
 
 	cmd := &cobra.Command{
 		Use:   "grokgo",
@@ -31,6 +32,10 @@ func NewRootCmd() *cobra.Command {
 
       if cmd.Flag("yes").Changed {
         cfg.Yes = yesFlag
+      }
+
+      if cmd.Flag("json").Changed {
+      	cfg.JSON = jsonFlag
       }
 
 			return nil
@@ -54,6 +59,13 @@ func NewRootCmd() *cobra.Command {
   	"automatically confirm execution",
   )
 
+  cmd.PersistentFlags().BoolVar(
+  	&jsonFlag,
+  	"json",
+  	false,
+  	"output machine-readable JSON",
+  )
+
 	cmd.Flags().StringVar(
 		&modelFlag,
 		"model",
@@ -61,7 +73,7 @@ func NewRootCmd() *cobra.Command {
 		"override model (env: GROKGO_MODEL)",
 	)
 
-	cmd.AddCommand(newDoctorCmd())
+	cmd.AddCommand(newDoctorCmd(&cfg))
   cmd.AddCommand(newHealCmd(&cfg))
 
 	return cmd

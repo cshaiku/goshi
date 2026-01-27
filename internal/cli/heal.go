@@ -5,6 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+  "encoding/json"
+
   "grokgo/internal/config"
   "grokgo/internal/detect"
 	"grokgo/internal/diagnose"
@@ -31,6 +33,23 @@ func newHealCmd(cfg *config.Config) *cobra.Command {
 		Use:   "heal",
 		Short: "Plan repairs for detected environment issues",
 		RunE: func(cmd *cobra.Command, args []string) error {
+      if cfg.JSON {
+      	out, err := json.MarshalIndent(map[string]any{
+      		"mode": func() string {
+      			if cfg.DryRun {
+      				return "dry-run"
+      			}
+      			return "execute"
+      		}(),
+      	}, "", "  ")
+      	if err != nil {
+      		return err
+      	}
+
+      	fmt.Println(string(out))
+      	return nil
+      }
+
       mode := "DRY-RUN"
       if !cfg.DryRun {
         mode = "EXECUTE"

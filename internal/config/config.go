@@ -7,6 +7,7 @@ type Config struct {
 	Model  string
   DryRun bool
   Yes bool
+  JSON bool
 }
 
 
@@ -16,6 +17,7 @@ func Load() Config {
 		Model:  os.Getenv("GROKGO_MODEL"),
 		DryRun: true,
 		Yes:    false,
+    JSON: false,
 	}
 
 	if cfg.Model == "" {
