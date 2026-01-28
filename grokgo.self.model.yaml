@@ -153,3 +153,15 @@ test_expectations:
     - "unit_tests"
     - "self_check_tests"
   must_pass_before_release: true
+
+version: 1
+identity:
+  binary_name: "grokgo"
+  repo_root_marker: "grokgo.self.model.yaml"
+
+safety:
+  scope: "self-only"
+  allow_external_writes: false
+  require_clean_git: true
+  allow_root: false
+  enforce_cwd_within_repo: true

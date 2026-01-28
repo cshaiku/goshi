@@ -73,6 +73,7 @@ func NewRootCmd() *cobra.Command {
 		"override model (env: GROKGO_MODEL)",
 	)
 
+  cmd.AddCommand(newDiagnosticsCmd(&cfg))
 	cmd.AddCommand(newDoctorCmd(&cfg))
   cmd.AddCommand(newHealCmd(&cfg))
 
