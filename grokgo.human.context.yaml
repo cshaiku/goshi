@@ -2,6 +2,12 @@
 # This file is the canonical source of intent for the application.
 # If code or documentation conflicts with this file, this file wins.
 
+meta:
+  operationalized_by: "grokgo.self.model.yaml"
+  note: >
+    This document defines human intent and scope.
+    Enforceable rules live in the self-model.
+
 application:
   name: "GrokGo"
   one_sentence_purpose: >
