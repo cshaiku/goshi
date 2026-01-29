@@ -6,8 +6,7 @@ meta:
   derives_from: "grokgo.human.context.yaml"
   authority: "enforced"
   note: >
-    This file operationalizes and enforces the intent defined
-    in the human context document.
+    This file operationalizes and enforces the intent defined in the human context document.
 
 model:
   model_version: "1.0.0"
@@ -21,19 +20,19 @@ model:
 application:
   name: "GrokGo"
   public_purpose: >
-    Provide a command-line interface for interacting with the Grok API
-    using a user-supplied XAI/Grok API key.
+    Provide a command-line interface for interacting with the Grok API using a user-supplied XAI/Grok API key.
   internal_purpose: >
-    Maintain its own operability over time through self-detection,
-    diagnosis, guided self-healing, and verification.
-  responsibility_boundary:
-    - "GrokGo source code"
-    - "GrokGo runtime dependencies"
-    - "Declared Grok API contracts"
-  explicit_non_responsibilities:
-    - "Managing arbitrary system environments"
-    - "Modifying unrelated repositories"
-    - "Healing external applications"
+    Maintain its own operability over time through self-detection, diagnosis, guided self-healing, and verification.
+
+responsibility_boundary:
+  - "GrokGo source code"
+  - "GrokGo runtime dependencies"
+  - "Declared Grok API contracts"
+
+explicit_non_responsibilities:
+  - "Managing arbitrary system environments"
+  - "Modifying unrelated repositories"
+  - "Healing external applications"
 
 commands:
   required:
@@ -41,14 +40,15 @@ commands:
       description: "Check GrokGo health against the self-model"
     - name: "heal"
       description: "Guide or perform self-healing actions"
-  global_flags:
-    dry_run:
-      default: true
-      description: "No execution unless explicitly disabled"
-    yes:
-      description: "Skip confirmation prompts"
-    json:
-      description: "Machine-readable output"
+
+global_flags:
+  dry_run:
+    default: true
+    description: "No execution unless explicitly disabled"
+  yes:
+    description: "Skip confirmation prompts"
+  json:
+    description: "Machine-readable output"
 
 safety_invariants:
   dry_run_default: true
@@ -63,13 +63,15 @@ execution_boundaries:
     - "system_state"
     - "other_repositories"
     - "user_projects"
-  allowed_actions:
-    - "read_files"
-    - "suggest_code_changes"
-    - "prepare_patches"
-  forbidden_actions:
-    - "auto_apply_code_changes"
-    - "direct_main_branch_push"
+
+allowed_actions:
+  - "read_files"
+  - "suggest_code_changes"
+  - "prepare_patches"
+
+forbidden_actions:
+  - "auto_apply_code_changes"
+  - "direct_main_branch_push"
 
 external_contracts:
   grok_api:
@@ -88,8 +90,8 @@ external_contracts:
       registration: "local_only"
       auditing: true
       revertability: true
-    failure_handling:
-      default: "abort_with_explanation"
+      failure_handling:
+        default: "abort_with_explanation"
 
 dependencies:
   required_binaries:
@@ -128,13 +130,12 @@ verification:
   criteria:
     - "dependencies_present"
     - "api_contract_satisfied"
-
-failure_semantics:
-  exit_codes:
-    ok: 0
-    warn: 1
-    error: 2
-    fatal: 3
+  failure_semantics:
+    exit_codes:
+      ok: 0
+      warn: 1
+      error: 2
+      fatal: 3
 
 compatibility:
   breaking_change_requires:
@@ -154,9 +155,9 @@ test_expectations:
     - "self_check_tests"
   must_pass_before_release: true
 
-version: 1
 identity:
   binary_name: "grokgo"
+  role: safety-bounded cli
   repo_root_marker: "grokgo.self.model.yaml"
 
 safety:
@@ -165,3 +166,26 @@ safety:
   require_clean_git: true
   allow_root: false
   enforce_cwd_within_repo: true
+
+capabilities:
+  local_actions:
+    fs.list:
+      enabled: true
+      scope: working_directory
+      max_depth: 1
+
+    fs.read:
+      enabled: true
+      scope: repo
+      constraints:
+        - relative_path
+        - no_symlinks
+        - read_only
+
+    fs.write:
+      enabled: true
+      scope: repo
+      constraints:
+        - relative_path
+        - no_symlinks
+        - overwrite_allowed

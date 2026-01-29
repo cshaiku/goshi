@@ -1,0 +1,8 @@
+version: 1
+namespace: fs
+description: Local filesystem actions gated by self-model and runtime invariants
+
+actions:
+  - fs.list
+  - fs.read
+  - fs.write

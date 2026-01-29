@@ -1,0 +1,26 @@
+action: fs.list
+description: List directory entries without recursion
+
+request:
+  scope:
+    type: enum
+    values:
+      - working_directory
+    required: true
+
+  depth:
+    type: integer
+    allowed:
+      - 1
+    required: true
+
+  reason:
+    type: string
+    required: true
+
+response:
+  files:
+    type: array
+    items:
+      name: string
+      type: enum[file, directory]

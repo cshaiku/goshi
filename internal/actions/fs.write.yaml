@@ -1,0 +1,23 @@
+action: fs.write
+description: Write or overwrite a single file within the allowed repository scope
+
+request:
+  path:
+    type: string
+    constraints:
+      - relative
+      - no_symlinks
+      - repo_scoped
+    required: true
+
+  content:
+    type: string
+    required: true
+
+  reason:
+    type: string
+    required: true
+
+response:
+  written:
+    type: boolean
