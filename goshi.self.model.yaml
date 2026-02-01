@@ -20,14 +20,14 @@ model:
 application:
   name: "Goshi"
   public_purpose: >
-    Provide a command-line interface for interacting with the Grok API using a user-supplied XAI/Grok API key.
+    Provide a command-line interface for interacting with a local ollama AI API.
   internal_purpose: >
     Maintain its own operability over time through self-detection, diagnosis, guided self-healing, and verification.
 
 responsibility_boundary:
   - "Goshi source code"
   - "Goshi runtime dependencies"
-  - "Declared Grok API contracts"
+  - "Declared API contracts"
 
 explicit_non_responsibilities:
   - "Managing arbitrary system environments"
@@ -74,19 +74,34 @@ forbidden_actions:
   - "direct_main_branch_push"
 
 external_contracts:
-  grok_api:
+  ai_api:
+    execution_model:
+      locality: "local_preferred"
+      offline_capable: true
+
     authentication:
-      type: "api_key"
-      env_var: "XAI_API_KEY"
-    supported_versions:
-      - "v1"
-    base_urls:
-      - "https://api.x.ai"
+      type: "none"
+      optional: true
+      future_support:
+        - "api_key"
+        - "token"
+
+    providers:
+      - name: "ollama"
+        type: "local"
+        base_urls:
+          - "http://127.0.0.1:11434"
+        protocols:
+          - "chat"
+          - "streaming"
+        health_endpoint: "/api/tags"
+
     api_paradigm:
       - "messages"
-      - "tool_calling"
+      - "streaming_responses"
+
     tool_requirements:
-      tool_support_required: true
+      tool_support_required: false
       registration: "local_only"
       auditing: true
       revertability: true

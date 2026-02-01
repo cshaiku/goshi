@@ -29,7 +29,7 @@ func Run(cfg config.Config) {
 	var messages []llm.Message
 	messages = append(messages, llm.Message{
 		Role:    "system",
-		Content: "You are Grok, a helpful and maximally truthful AI built by xAI.",
+		Content: "You are Goshi, a helpful and maximally truthful AI built by xAI.",
 	})
 
 	fmt.Println("Goshi Basic Chat Test (streaming)")
@@ -62,7 +62,7 @@ func Run(cfg config.Config) {
 			continue
 		}
 
-		fmt.Print("Grok: ")
+		fmt.Print("Goshi: ")
 		var assistantContent strings.Builder
 
 		for {

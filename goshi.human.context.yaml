@@ -11,7 +11,7 @@ meta:
 application:
   name: "Goshi"
   one_sentence_purpose: >
-    A Go-native CLI client for the Grok API that can inspect, diagnose,
+    A Go-native CLI client for a local ollama AI API that can inspect, diagnose,
     and self-heal its own dependencies and execution environment to remain
     functional over time.
 
@@ -22,7 +22,7 @@ intent:
     - "Fragile CLI tooling that fails without guidance or recovery paths"
     - "Difficult-to-diagnose failures in headless or CI environments"
   target_users:
-    - "Developers using Goshi as a CLI interface to Grok"
+    - "Developers using Goshi as a CLI interface to AI"
     - "Contributors maintaining or extending Goshi"
     - "CI systems invoking Goshi non-interactively"
   non_goals:
@@ -97,7 +97,7 @@ constraints:
 evolution_policy:
   allowed_growth:
     - "Improved self-diagnosis of Goshi failures"
-    - "Adaptation to Grok API changes"
+    - "Adaptation to AI API changes"
     - "Better developer guidance during breakage"
     - "Optional LLM-assisted explanations of failures"
   disallowed_directions:
@@ -112,7 +112,7 @@ operational_context:
   privacy_posture: "No telemetry or reporting by default"
   deployment_assumptions:
     - "Executed locally or in CI"
-    - "Used as a CLI interface to Grok services"
+    - "Used as a CLI interface to AI services"
 
 success_criteria:
   - "Goshi can detect when it is unable to function"
