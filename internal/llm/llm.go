@@ -3,17 +3,16 @@ package llm
 import "context"
 
 type Message struct {
-	Role    string
-	Content string
+	Role    string `json:"role"`
+	Content string `json:"content"`
 }
 
 type Stream interface {
-	Next() bool
-	Content() string
-	Err() error
+	Recv() (string, error)
 	Close() error
 }
 
-type ChatClient interface {
+type Client interface {
 	Stream(ctx context.Context, messages []Message) (Stream, error)
 }
+

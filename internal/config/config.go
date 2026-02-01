@@ -3,8 +3,8 @@ package config
 import "os"
 
 type Config struct {
-	APIKey string
 	Model  string
+	LLMProvider string
   DryRun bool
   Yes bool
   JSON bool
@@ -13,15 +13,19 @@ type Config struct {
 
 func Load() Config {
 	cfg := Config{
-		APIKey: os.Getenv("XAI_API_KEY"),
 		Model:  os.Getenv("GROKGO_MODEL"),
+		LLMProvider: os.Getenv("GROKGO_LLM_PROVIDER"),
 		DryRun: true,
 		Yes:    false,
     JSON: false,
 	}
 
 	if cfg.Model == "" {
-		cfg.Model = "grok-beta"
+		cfg.Model = "ollama"
+	}
+
+	if cfg.LLMProvider == "" {
+		cfg.LLMProvider = "auto"
 	}
 
 	return cfg

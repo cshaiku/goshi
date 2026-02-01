@@ -13,15 +13,24 @@ import (
 func NewRootCmd() *cobra.Command {
 	cfg := config.Load()
 
-	var modelFlag string
+	var modelFlag  string
+  var llmFlag    string
 	var dryRunFlag bool
-  var yesFlag bool
-  var jsonFlag bool
+  var yesFlag    bool
+  var jsonFlag   bool
 
 	cmd := &cobra.Command{
 		Use:   "grokgo",
 		Short: "GrokGo — Go-native AI CLI",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if modelFlag != "" {
+				cfg.Model = modelFlag
+			}
+
+			if llmFlag != "" {
+				cfg.LLMProvider = llmFlag
+			}
+
 			if modelFlag != "" {
 				cfg.Model = modelFlag
 			}
@@ -44,6 +53,13 @@ func NewRootCmd() *cobra.Command {
 			app.Run(cfg)
 		},
 	}
+
+	cmd.PersistentFlags().StringVar(
+		&llmFlag,
+		"llm",
+		"",
+		"LLM provider: auto | xai | ollama",
+	)
 
 	cmd.PersistentFlags().BoolVar(
 		&dryRunFlag,
