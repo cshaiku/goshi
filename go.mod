@@ -1,4 +1,4 @@
-module grokgo
+module goshi
 
 go 1.24.4
 

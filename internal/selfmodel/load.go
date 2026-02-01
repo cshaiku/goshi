@@ -7,7 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const DefaultPath = "grokgo.self.model.yaml"
+const DefaultPath = "goshi.self.model.yaml"
 
 func Load(path string) (*Model, error) {
 	if path == "" {

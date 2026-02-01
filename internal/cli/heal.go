@@ -7,12 +7,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"grokgo/internal/config"
-	"grokgo/internal/detect"
-	"grokgo/internal/diagnose"
-	"grokgo/internal/exec"
-	"grokgo/internal/repair"
-	"grokgo/internal/verify"
+	"goshi/internal/config"
+	"goshi/internal/detect"
+	"goshi/internal/diagnose"
+	"goshi/internal/exec"
+	"goshi/internal/repair"
+	"goshi/internal/verify"
 )
 
 func confirmExecution() bool {

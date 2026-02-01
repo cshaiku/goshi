@@ -7,7 +7,7 @@ import (
 
 func checkBinaryName() InvariantResult {
   actual := filepath.Base(os.Args[0])
-  expected := "grokgo"
+  expected := "goshi"
 
   return InvariantResult{
     Name:     "binary_name",

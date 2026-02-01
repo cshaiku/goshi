@@ -1,6 +1,6 @@
 package repair
 
-import "grokgo/internal/diagnose"
+import "goshi/internal/diagnose"
 
 type BasicRepairer struct{}
 

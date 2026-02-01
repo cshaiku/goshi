@@ -13,8 +13,8 @@ type Config struct {
 
 func Load() Config {
 	cfg := Config{
-		Model:  os.Getenv("GROKGO_MODEL"),
-		LLMProvider: os.Getenv("GROKGO_LLM_PROVIDER"),
+		Model:  os.Getenv("GOSHI_MODEL"),
+		LLMProvider: os.Getenv("GOSHI_LLM_PROVIDER"),
 		DryRun: true,
 		Yes:    false,
     JSON: false,

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"grokgo/internal/repair"
+	"goshi/internal/repair"
 )
 
 type Executor struct {

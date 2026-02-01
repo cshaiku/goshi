@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"grokgo/internal/config"
-	"grokgo/internal/llm"
-	"grokgo/internal/llm/ollama"
+	"goshi/internal/config"
+	"goshi/internal/llm"
+	"goshi/internal/llm/ollama"
 )
 
 func Run(cfg config.Config) {
@@ -32,7 +32,7 @@ func Run(cfg config.Config) {
 		Content: "You are Grok, a helpful and maximally truthful AI built by xAI.",
 	})
 
-	fmt.Println("GrokGo Basic Chat Test (streaming)")
+	fmt.Println("Goshi Basic Chat Test (streaming)")
 	fmt.Println("Type your message and press Enter. Type /quit to exit.")
 	fmt.Println("-----------------------------------------------------")
 

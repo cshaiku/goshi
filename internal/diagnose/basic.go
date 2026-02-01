@@ -1,6 +1,6 @@
 package diagnose
 
-import "grokgo/internal/detect"
+import "goshi/internal/detect"
 
 type BasicDiagnoser struct{}
 

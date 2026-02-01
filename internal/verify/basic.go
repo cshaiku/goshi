@@ -1,6 +1,6 @@
 package verify
 
-import "grokgo/internal/detect"
+import "goshi/internal/detect"
 
 type BasicVerifier struct {
 	Binaries []string

@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"grokgo/internal/config"
-	"grokgo/internal/detect"
-	"grokgo/internal/diagnose"
+	"goshi/internal/config"
+	"goshi/internal/detect"
+	"goshi/internal/diagnose"
 )
 
 func newDoctorCmd(cfg *config.Config) *cobra.Command {

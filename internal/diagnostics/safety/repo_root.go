@@ -3,7 +3,7 @@ package safety
 import "os"
 
 func checkRepoRootMarker() InvariantResult {
-  marker := "grokgo.self.model.yaml"
+  marker := "goshi.self.model.yaml"
   _, err := os.Stat(marker)
 
   return InvariantResult{

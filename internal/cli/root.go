@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"grokgo/internal/app"
-	"grokgo/internal/config"
+	"goshi/internal/app"
+	"goshi/internal/config"
 )
 
 
@@ -20,8 +20,8 @@ func NewRootCmd() *cobra.Command {
   var jsonFlag   bool
 
 	cmd := &cobra.Command{
-		Use:   "grokgo",
-		Short: "GrokGo — Go-native AI CLI",
+		Use:   "goshi",
+		Short: "Goshi — Go-native AI CLI",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if modelFlag != "" {
 				cfg.Model = modelFlag
@@ -86,7 +86,7 @@ func NewRootCmd() *cobra.Command {
 		&modelFlag,
 		"model",
 		"",
-		"override model (env: GROKGO_MODEL)",
+		"override model (env: GOSHI_MODEL)",
 	)
 
   cmd.AddCommand(newDiagnosticsCmd(&cfg))

@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"grokgo/internal/config"
-	"grokgo/internal/selfmodel"
+	"goshi/internal/config"
+	"goshi/internal/selfmodel"
 )
 
 type diagnosticsReport struct {
@@ -22,7 +22,7 @@ type diagnosticsReport struct {
 func newDiagnosticsCmd(cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "diagnostics",
-		Short: "Validate GrokGo against its self-model",
+		Short: "Validate Goshi against its self-model",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			model, err := selfmodel.Load("")
 			if err != nil {

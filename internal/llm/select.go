@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"grokgo/internal/config"
+	"goshi/internal/config"
 )
 
 func SelectProvider(cfg config.Config) string {

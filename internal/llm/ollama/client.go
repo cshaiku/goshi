@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	"grokgo/internal/llm"
+	"goshi/internal/llm"
 )
 
 type Client struct {

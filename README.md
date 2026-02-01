@@ -1,6 +1,6 @@
-# grokgo
+# goshi
 
-grokgo is a Go-based CLI tool and the self-hosted, self-aware successor to grok-cli.
+goshi is a Go-based CLI tool and the self-hosted, self-aware successor to grok-cli.
 
 Its primary goal is to be safe, diagnosable, and self-healing — for itself only.
 
@@ -8,7 +8,7 @@ Its primary goal is to be safe, diagnosable, and self-healing — for itself onl
 
 ## Purpose
 
-grokgo explores a stricter model of AI-assisted tooling where:
+goshi explores a stricter model of AI-assisted tooling where:
 
 - The tool has an explicit, machine-enforced understanding of what it is
 - Safety invariants are checked before any action
@@ -25,13 +25,13 @@ This is an experiment in bounded autonomy, not a general-purpose agent.
 Declares intent and purpose.
 
 File:
-- grokgo.human.context.yaml
+- goshi.human.context.yaml
 
 ### Self Model
 Defines machine-enforced identity, scope, and safety constraints.
 
 File:
-- grokgo.self.model.yaml
+- goshi.self.model.yaml
 
 ### Diagnostics-First Execution
 All actions are gated by diagnostics phases, executed in order:
@@ -48,8 +48,8 @@ If any phase fails, execution halts.
 
 ### Diagnostics
 
-grokgo diagnostics  
-grokgo diagnostics --json
+goshi diagnostics  
+goshi diagnostics --json
 
 Characteristics:
 - Verdict-first output
@@ -65,9 +65,9 @@ Exit codes:
 
 ## Safety Model (High Level)
 
-grokgo enforces the following invariants:
+goshi enforces the following invariants:
 
-- Binary identity must be grokgo
+- Binary identity must be goshi
 - Execution must occur within its own repository
 - No filesystem mutation outside allow-listed paths
 - No healing when the git working tree is dirty

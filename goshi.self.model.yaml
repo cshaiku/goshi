@@ -1,0 +1,191 @@
+# Goshi Self-Model
+# Canonical, normative, human-authored source of truth for Goshi
+# If code or behavior conflicts with this file, this file wins.
+
+meta:
+  derives_from: "goshi.human.context.yaml"
+  authority: "enforced"
+  note: >
+    This file operationalizes and enforces the intent defined in the human context document.
+
+model:
+  model_version: "1.0.0"
+  change_policy:
+    major: "Architectural or intent-breaking changes"
+    minor: "Additive or non-breaking intent clarification"
+    hotfix: "Emergency correction without intent shift"
+  enforcement: "enforced"
+  last_reviewed: "2026-01-27"
+
+application:
+  name: "Goshi"
+  public_purpose: >
+    Provide a command-line interface for interacting with the Grok API using a user-supplied XAI/Grok API key.
+  internal_purpose: >
+    Maintain its own operability over time through self-detection, diagnosis, guided self-healing, and verification.
+
+responsibility_boundary:
+  - "Goshi source code"
+  - "Goshi runtime dependencies"
+  - "Declared Grok API contracts"
+
+explicit_non_responsibilities:
+  - "Managing arbitrary system environments"
+  - "Modifying unrelated repositories"
+  - "Healing external applications"
+
+commands:
+  required:
+    - name: "doctor"
+      description: "Check Goshi health against the self-model"
+    - name: "heal"
+      description: "Guide or perform self-healing actions"
+
+global_flags:
+  dry_run:
+    default: true
+    description: "No execution unless explicitly disabled"
+  yes:
+    description: "Skip confirmation prompts"
+  json:
+    description: "Machine-readable output"
+
+safety_invariants:
+  dry_run_default: true
+  confirmation_required_for_execution: true
+  no_silent_execution: true
+  fail_fast: true
+
+execution_boundaries:
+  allowed_targets:
+    - "this_repository"
+  forbidden_targets:
+    - "system_state"
+    - "other_repositories"
+    - "user_projects"
+
+allowed_actions:
+  - "read_files"
+  - "suggest_code_changes"
+  - "prepare_patches"
+
+forbidden_actions:
+  - "auto_apply_code_changes"
+  - "direct_main_branch_push"
+
+external_contracts:
+  grok_api:
+    authentication:
+      type: "api_key"
+      env_var: "XAI_API_KEY"
+    supported_versions:
+      - "v1"
+    base_urls:
+      - "https://api.x.ai"
+    api_paradigm:
+      - "messages"
+      - "tool_calling"
+    tool_requirements:
+      tool_support_required: true
+      registration: "local_only"
+      auditing: true
+      revertability: true
+      failure_handling:
+        default: "abort_with_explanation"
+
+dependencies:
+  required_binaries:
+    - name: "git"
+    - name: "curl"
+    - name: "jq"
+
+project_structure:
+  required_directories:
+    - "cmd/goshi"
+    - "internal/cli"
+    - "internal/exec"
+    - "internal/detect"
+    - "internal/diagnose"
+    - "internal/repair"
+    - "internal/verify"
+  forbidden_patterns:
+    - "shell_interpolation"
+    - "implicit_execution"
+
+git_workflow:
+  branch_policy: "branches_only"
+  protected_branches:
+    - "main"
+  pull_requests_required: true
+  forbidden_operations:
+    - "direct_push_to_main"
+
+self_healing_rules:
+  default_mode: "suggest_only"
+  escalation_allowed: false
+  human_approval_required: true
+
+verification:
+  required_after_execution: true
+  criteria:
+    - "dependencies_present"
+    - "api_contract_satisfied"
+  failure_semantics:
+    exit_codes:
+      ok: 0
+      warn: 1
+      error: 2
+      fatal: 3
+
+compatibility:
+  breaking_change_requires:
+    - "model_version_major_bump"
+    - "explicit_changelog"
+
+documentation_contracts:
+  required_documents:
+    - "README.md"
+    - "Application Context Manifest"
+    - "Self-Model"
+  must_reflect_model: true
+
+test_expectations:
+  required:
+    - "unit_tests"
+    - "self_check_tests"
+  must_pass_before_release: true
+
+identity:
+  binary_name: "goshi"
+  role: safety-bounded cli
+  repo_root_marker: "goshi.self.model.yaml"
+
+safety:
+  scope: "self-only"
+  allow_external_writes: false
+  require_clean_git: true
+  allow_root: false
+  enforce_cwd_within_repo: true
+
+capabilities:
+  local_actions:
+    fs.list:
+      enabled: true
+      scope: working_directory
+      max_depth: 1
+
+    fs.read:
+      enabled: true
+      scope: repo
+      constraints:
+        - relative_path
+        - no_symlinks
+        - read_only
+
+    fs.write:
+      enabled: true
+      scope: repo
+      constraints:
+        - relative_path
+        - no_symlinks
+        - overwrite_allowed
