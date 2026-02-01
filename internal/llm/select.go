@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"goshi/internal/config"
+	"github.com/cshaiku/goshi/internal/config"
 )
 
 func SelectProvider(cfg config.Config) string {

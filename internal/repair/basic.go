@@ -1,6 +1,6 @@
 package repair
 
-import "goshi/internal/diagnose"
+import "github.com/cshaiku/goshi/internal/diagnose"
 
 type BasicRepairer struct{}
 

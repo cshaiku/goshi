@@ -1,6 +1,6 @@
 package diagnose
 
-import "goshi/internal/detect"
+import "github.com/cshaiku/goshi/internal/detect"
 
 type Diagnoser interface {
 	Diagnose(detect.Result) (Result, error)

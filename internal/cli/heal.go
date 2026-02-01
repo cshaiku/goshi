@@ -7,12 +7,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"goshi/internal/config"
-	"goshi/internal/detect"
-	"goshi/internal/diagnose"
-	"goshi/internal/exec"
-	"goshi/internal/repair"
-	"goshi/internal/verify"
+	"github.com/cshaiku/goshi/internal/config"
+	"github.com/cshaiku/goshi/internal/detect"
+	"github.com/cshaiku/goshi/internal/diagnose"
+	"github.com/cshaiku/goshi/internal/exec"
+	"github.com/cshaiku/goshi/internal/repair"
+	"github.com/cshaiku/goshi/internal/verify"
 )
 
 func confirmExecution() bool {

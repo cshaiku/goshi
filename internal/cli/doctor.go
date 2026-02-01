@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"goshi/internal/config"
-	"goshi/internal/detect"
-	"goshi/internal/diagnose"
+	"github.com/cshaiku/goshi/internal/config"
+	"github.com/cshaiku/goshi/internal/detect"
+	"github.com/cshaiku/goshi/internal/diagnose"
 )
 
 func newDoctorCmd(cfg *config.Config) *cobra.Command {

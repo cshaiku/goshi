@@ -1,6 +1,6 @@
 package verify
 
-import "goshi/internal/detect"
+import "github.com/cshaiku/goshi/internal/detect"
 
 type BasicVerifier struct {
 	Binaries []string

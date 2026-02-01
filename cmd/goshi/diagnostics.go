@@ -5,7 +5,7 @@ import (
   "fmt"
   "os"
 
-  "goshi/internal/diagnostics/safety"
+  "github.com/cshaiku/goshi/internal/diagnostics/safety"
 )
 
 func runDiagnostics(jsonOut bool) {

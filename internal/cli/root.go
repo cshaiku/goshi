@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"goshi/internal/app"
-	"goshi/internal/config"
+	"github.com/cshaiku/goshi/internal/app"
+	"github.com/cshaiku/goshi/internal/config"
 )
 
 

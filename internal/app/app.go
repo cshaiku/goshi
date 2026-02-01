@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"goshi/internal/config"
-	"goshi/internal/llm"
-	"goshi/internal/llm/ollama"
+	"github.com/cshaiku/goshi/internal/config"
+	"github.com/cshaiku/goshi/internal/llm"
+	"github.com/cshaiku/goshi/internal/llm/ollama"
 )
 
 func Run(cfg config.Config) {

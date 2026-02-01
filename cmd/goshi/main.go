@@ -1,6 +1,6 @@
 package main
 
-import "goshi/internal/cli"
+import "github.com/cshaiku/goshi/internal/cli"
 
 func main() {
 	cli.Execute()

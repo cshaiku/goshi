@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"goshi/internal/config"
-	"goshi/internal/selfmodel"
+	"github.com/cshaiku/goshi/internal/config"
+	"github.com/cshaiku/goshi/internal/selfmodel"
 )
 
 type diagnosticsReport struct {

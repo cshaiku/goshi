@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"goshi/internal/repair"
+	"github.com/cshaiku/goshi/internal/repair"
 )
 
 type Executor struct {

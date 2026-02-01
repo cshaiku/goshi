@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	"goshi/internal/llm"
+	"github.com/cshaiku/goshi/internal/llm"
 )
 
 type Client struct {

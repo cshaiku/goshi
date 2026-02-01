@@ -1,6 +1,6 @@
 package diagnose
 
-import "goshi/internal/detect"
+import "github.com/cshaiku/goshi/internal/detect"
 
 type BasicDiagnoser struct{}
 
