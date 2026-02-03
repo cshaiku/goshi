@@ -1,3 +1,6 @@
+# WORK IN PROGRESS #
+
+
 # goshi
 
 goshi is a Go-based CLI tool and the self-hosted, self-aware successor to grok-cli.
