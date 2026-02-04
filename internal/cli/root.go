@@ -50,7 +50,11 @@ func NewRootCmd() *cobra.Command {
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			app.Run(cfg)
+			runChat(
+				context.Background(),
+				client,
+				"You are Goshi, a protective, truthful, local-first AI assistant.",
+			)
 		},
 	}
 
@@ -93,6 +97,9 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newDoctorCmd(&cfg))
   cmd.AddCommand(newHealCmd(&cfg))
 
+  // File System
+	cmd.AddCommand(newFSCommand())
+
 	return cmd
 }
 
@@ -102,3 +109,4 @@ func Execute() {
 		log.Fatal(err)
 	}
 }
+

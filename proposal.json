@@ -1,0 +1,6 @@
+{
+  "diff": "--- file.go\n+++ file.go\n@@\n+// test\n",
+  "generated_at": "2026-02-02T12:04:06Z",
+  "is_new_file": true,
+  "path": "/Users/cs/goshi/file.go"
+}

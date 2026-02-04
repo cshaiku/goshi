@@ -1,93 +1,64 @@
 package app
 
 import (
-	"bufio"
 	"context"
-	"fmt"
-	"log"
-	"os"
-	"strings"
-	"time"
 
-	"github.com/cshaiku/goshi/internal/config"
 	"github.com/cshaiku/goshi/internal/llm"
-	"github.com/cshaiku/goshi/internal/llm/ollama"
 )
 
-func Run(cfg config.Config) {
-	// Fail fast if Ollama is not running
-	healthCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
+// ChatSession encapsulates pure chat state.
+// No IO, no CLI, no printing.
+type ChatSession struct {
+	Client   llm.Client
+	Messages []llm.Message
+}
 
-	if err := ollama.CheckHealth(healthCtx); err != nil {
-		log.Fatalf("Ollama health check failed: %v", err)
+// NewChatSession creates a new chat session with an initial system prompt.
+func NewChatSession(client llm.Client, systemPrompt string) *ChatSession {
+	msgs := []llm.Message{
+		{
+			Role:    "system",
+			Content: systemPrompt,
+		},
 	}
 
-	var client llm.Client
-	client = ollama.New(cfg.Model)
+	return &ChatSession{
+		Client:   client,
+		Messages: msgs,
+	}
+}
 
-	var messages []llm.Message
-	messages = append(messages, llm.Message{
-		Role:    "system",
-		Content: "You are Goshi, a helpful and maximally truthful AI built by xAI.",
+// StreamResponse streams a single assistant response.
+// The caller is responsible for:
+// - displaying output
+// - handling tool calls
+// - appending messages
+func (s *ChatSession) StreamResponse(
+	ctx context.Context,
+) (llm.Stream, error) {
+	return s.Client.Stream(ctx, s.Messages)
+}
+
+// AppendUserMessage appends a user message.
+func (s *ChatSession) AppendUserMessage(content string) {
+	s.Messages = append(s.Messages, llm.Message{
+		Role:    "user",
+		Content: content,
 	})
+}
 
-	fmt.Println("Goshi Basic Chat Test (streaming)")
-	fmt.Println("Type your message and press Enter. Type /quit to exit.")
-	fmt.Println("-----------------------------------------------------")
+// AppendAssistantMessage appends an assistant message.
+func (s *ChatSession) AppendAssistantMessage(content string) {
+	s.Messages = append(s.Messages, llm.Message{
+		Role:    "assistant",
+		Content: content,
+	})
+}
 
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-
-	for {
-		fmt.Print("\nYou: ")
-		if !scanner.Scan() {
-			break
-		}
-
-		userInput := strings.TrimSpace(scanner.Text())
-		if userInput == "" || userInput == "/quit" {
-			fmt.Println("Goodbye!")
-			break
-		}
-
-		messages = append(messages, llm.Message{
-			Role:    "user",
-			Content: userInput,
-		})
-
-		stream, err := client.Stream(context.Background(), messages)
-		if err != nil {
-			log.Printf("Stream failed: %v", err)
-			continue
-		}
-
-		fmt.Print("Goshi: ")
-		var assistantContent strings.Builder
-
-		for {
-			chunk, err := stream.Recv()
-			if err != nil {
-				break
-			}
-			if chunk != "" {
-				fmt.Print(chunk)
-				assistantContent.WriteString(chunk)
-			}
-		}
-
-		stream.Close()
-		fmt.Println()
-
-		if assistantContent.Len() > 0 {
-			messages = append(messages, llm.Message{
-				Role:    "assistant",
-				Content: assistantContent.String(),
-			})
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		log.Printf("Input error: %v", err)
-	}
+// AppendSystemMessage appends a system/tool message.
+func (s *ChatSession) AppendSystemMessage(content string) {
+	s.Messages = append(s.Messages, llm.Message{
+		Role:    "system",
+		Content: content,
+	})
 }
