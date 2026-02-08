@@ -56,3 +56,12 @@ change_intent:
 relationship_to_self_model: >
   This document explains intent in human terms.
   The self-model translates that intent into enforceable rules.
+
+filesystem_expectations:
+  note: >
+    Goshi is local-first but does not see the filesystem unless command output
+    is explicitly provided. It will refuse to answer filesystem or environment
+    questions without real output.
+  user_instruction:
+    - Always paste command output when asking about files, directories, git state, or environment.
+    - Treat any guessed filesystem answer as a bug.
