@@ -1,42 +1,53 @@
 # WORK IN PROGRESS #
 
-
 # goshi
 
-goshi is a Go-based CLI tool and the self-hosted, self-aware successor to grok-cli.
+**goshi** is a Go-based CLI tool and the self-hosted, self-aware successor to grok-cli.
 
-Its primary goal is to be safe, diagnosable, and self-healing — for itself only.
+Its primary goal is to be **safe, diagnosable, auditable, and self-healing — for itself only**.
+
+This project explores a constrained, local-first model of AI-assisted tooling where **no action is implicit and no mutation is silent**.
 
 ---
 
 ## Purpose
 
-goshi explores a stricter model of AI-assisted tooling where:
+goshi explores a stricter model of AI-assisted automation where:
 
 - The tool has an explicit, machine-enforced understanding of what it is
-- Safety invariants are checked before any action
+- Safety invariants are checked before *any* action
+- Filesystem mutation is gated behind explicit, auditable proposals
 - Self-healing is constrained strictly to the tool’s own repository
-- Diagnostics are deterministic, automatable, and human-readable
+- Diagnostics and decisions are deterministic and inspectable
 
-This is an experiment in bounded autonomy, not a general-purpose agent.
+This is an experiment in **bounded autonomy**, not a general-purpose AI agent.
 
 ---
 
 ## Core Concepts
 
 ### Human Context
+
 Declares intent and purpose.
 
 File:
-- goshi.human.context.yaml
+- `goshi.human.context.yaml`
+
+---
 
 ### Self Model
+
 Defines machine-enforced identity, scope, and safety constraints.
 
 File:
-- goshi.self.model.yaml
+- `goshi.self.model.yaml`
+
+The self model is treated as **authoritative** and violations are considered safety breaches.
+
+---
 
 ### Diagnostics-First Execution
+
 All actions are gated by diagnostics phases, executed in order:
 
 1. Safety invariants
@@ -47,54 +58,52 @@ If any phase fails, execution halts.
 
 ---
 
-## Commands
+## Filesystem Safety Model
 
-### Diagnostics
+goshi uses a **two-phase, proposal-based filesystem model**.
 
-goshi diagnostics  
-goshi diagnostics --json
+### Key Properties
 
-Characteristics:
-- Verdict-first output
-- Deterministic exit codes
-- JSON suitable for automation
-
-Exit codes:
-- 0 — success
-- 2 — self-model violation
-- 3 — safety invariant violation
+- **No filesystem mutation happens immediately**
+- All writes are first recorded as proposals
+- Proposals are persisted and auditable
+- Applying a proposal requires explicit confirmation
+- Dry-run is enabled by default
 
 ---
 
-## Safety Model (High Level)
+### Write Proposals
 
-goshi enforces the following invariants:
+Creating a write **does not modify the filesystem**.
 
-- Binary identity must be goshi
-- Execution must occur within its own repository
-- No filesystem mutation outside allow-listed paths
-- No healing when the git working tree is dirty
-- No execution with unexpected privileges
-
-Violations are treated as safety breaches, not errors.
+```bash
+echo "NEW CONTENT" | goshi fs write path/to/file.txt
+```
 
 ---
 
-## Non-Goals
+### Applying a Proposal
 
-- Managing or healing other projects
-- Acting as a general AI agent
-- Modifying user systems outside the repository
-- Silent or implicit behavior changes
+Applying a proposal **requires two explicit opt-ins**:
+
+```bash
+goshi fs apply <proposal-id> --yes --dry-run=false
+```
 
 ---
 
-## Status
+### Drift Protection
 
-Early / Experimental
+If the target file has changed since the proposal was created, apply will fail.
 
-Safety and self-model layers are under active development.  
-Interfaces may evolve; the safety philosophy will not.
+---
+
+## Build & Run
+
+```bash
+go build -o goshi
+./goshi
+```
 
 ---
 
