@@ -2,6 +2,8 @@
 
 ## 1. Scope
 
+This document is design-time reasoning only and is not consumed by the binary.
+
 This threat model applies **only** to goshi itself.
 
 goshi is not intended to:
