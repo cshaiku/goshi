@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"log"
 
 	"github.com/cshaiku/goshi/internal/config"
@@ -44,11 +43,7 @@ func NewRootCmd() *cobra.Command {
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx := context.Background()
-
 			runChat(
-				ctx,
-				cfg,
 				"You are Goshi, a protective, truthful, local-first AI assistant.",
 			)
 		},

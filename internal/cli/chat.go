@@ -1,45 +1,90 @@
 package cli
 
 import (
+	"bufio"
 	"context"
-	"errors"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/cshaiku/goshi/internal/config"
 	"github.com/cshaiku/goshi/internal/llm"
 	"github.com/cshaiku/goshi/internal/llm/ollama"
 )
 
-// runChat owns LLM client creation and streaming.
-func runChat(ctx context.Context, cfg config.Config, systemPrompt string) {
-	var client llm.Client
+// runChat starts an interactive REPL-style chat session.
+// It blocks on stdin until the user exits.
+func runChat(systemPrompt string) {
+	cfg := config.Load()
+	ctx := context.Background()
 
-	switch llm.SelectProvider(cfg) {
-	case "ollama":
-		// ollama.New takes a model string and returns *ollama.Client
+	// Select LLM client (local-first)
+	var client llm.Client
+	switch cfg.LLMProvider {
+	case "ollama", "", "auto":
 		client = ollama.New(cfg.Model)
 	default:
-		panic(errors.New("no supported LLM provider available"))
+		fmt.Fprintf(os.Stderr, "unsupported LLM provider: %s\n", cfg.LLMProvider)
+		return
 	}
 
+	reader := bufio.NewReader(os.Stdin)
+
+	// Conversation state
 	messages := []llm.Message{
-		{
-			Role:    "system",
-			Content: systemPrompt,
-		},
+		{Role: "system", Content: systemPrompt},
 	}
 
-	stream, err := client.Stream(ctx, messages)
-	if err != nil {
-		panic(err)
-	}
-	defer stream.Close()
+	fmt.Println(systemPrompt)
+	fmt.Println("Type /quit to exit.")
+	fmt.Println("-----------------------------------------------------")
 
 	for {
-		chunk, err := stream.Recv()
+		fmt.Print("You: ")
+
+		line, err := reader.ReadString('\n')
 		if err != nil {
-			break
+			fmt.Println("\nExiting.")
+			return
 		}
-		fmt.Print(chunk)
+
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if line == "/quit" {
+			return
+		}
+
+		messages = append(messages, llm.Message{
+			Role:    "user",
+			Content: line,
+		})
+
+		stream, err := client.Stream(ctx, messages)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			continue
+		}
+
+		fmt.Print("Goshi: ")
+		var reply strings.Builder
+
+		for {
+			chunk, err := stream.Recv()
+			if err != nil {
+				break
+			}
+			fmt.Print(chunk)
+			reply.WriteString(chunk)
+		}
+		fmt.Println()
+
+		_ = stream.Close()
+
+		messages = append(messages, llm.Message{
+			Role:    "assistant",
+			Content: reply.String(),
+		})
 	}
 }
