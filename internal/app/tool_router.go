@@ -2,11 +2,9 @@ package app
 
 import (
 	"fmt"
-)
 
-type ToolAction interface {
-	Run(args map[string]string) (string, error)
-}
+	"github.com/cshaiku/goshi/internal/actions/runtime"
+)
 
 type ToolCall struct {
 	Name string
@@ -14,36 +12,30 @@ type ToolCall struct {
 }
 
 type ToolRouter struct {
-	actions map[string]ToolAction
-	caps    *Capabilities
+	dispatcher *runtime.Dispatcher
+	caps       *Capabilities
 }
 
-func NewToolRouter(actions map[string]ToolAction, caps *Capabilities) *ToolRouter {
+func NewToolRouter(dispatcher *runtime.Dispatcher, caps *Capabilities) *ToolRouter {
 	return &ToolRouter{
-		actions: actions,
-		caps:    caps,
+		dispatcher: dispatcher,
+		caps:       caps,
 	}
 }
 
 // Handle executes a tool call requested by the LLM.
-// NOTE: Step 1 — capabilities are NOT enforced yet.
 func (r *ToolRouter) Handle(call ToolCall) any {
-	action, ok := r.actions[call.Name]
-	if !ok {
-		return map[string]any{
-			"error": fmt.Sprintf("tool not allowed: %s", call.Name),
+	// --- STEP 2: CAPABILITY ENFORCEMENT ---
+	switch call.Name {
+	case "fs.read", "fs.list":
+		if !r.caps.Has(CapFSRead) {
+			return map[string]any{
+				"error": "filesystem read access not granted for this session",
+			}
 		}
 	}
 
-	// Convert args to map[string]string (existing behavior assumption)
-	args := map[string]string{}
-	for k, v := range call.Args {
-		if s, ok := v.(string); ok {
-			args[k] = s
-		}
-	}
-
-	result, err := action.Run(args)
+	out, err := r.dispatcher.Dispatch(call.Name, runtime.ActionInput(call.Args))
 	if err != nil {
 		return map[string]any{
 			"error": err.Error(),
@@ -51,6 +43,6 @@ func (r *ToolRouter) Handle(call ToolCall) any {
 	}
 
 	return map[string]any{
-		"result": result,
+		"result": out,
 	}
 }

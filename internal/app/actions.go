@@ -10,6 +10,10 @@ type ActionService struct {
 	dispatcher *runtime.Dispatcher
 }
 
+func (s *ActionService) Dispatcher() *runtime.Dispatcher {
+  return s.dispatcher
+}
+
 // NewActionService creates an ActionService scoped to a root directory.
 func NewActionService(root string) (*ActionService, error) {
 	guard, err := fs.NewGuard(root)

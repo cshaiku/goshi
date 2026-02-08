@@ -82,14 +82,24 @@ func runChat(systemPrompt string) {
 
 	client := llm.NewClient(sp, backend)
 
-	// --- STEP 1: SESSION-SCOPED CAPABILITIES (PLUMBING ONLY) ---
-	caps := app.NewCapabilities()
+	// --- STEP 2: SESSION CAPABILITIES + ACTION WIRING ---
 
-	// Existing permission struct remains untouched for now
-	perms := Permissions{}
+	caps := app.NewCapabilities()
 
 	cwd, _ := os.Getwd()
 	cwd, _ = filepath.EvalSymlinks(cwd)
+
+	actionSvc, err := app.NewActionService(cwd)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to initialize actions: %v\n", err)
+		return
+	}
+
+	router := app.NewToolRouter(actionSvc.Dispatcher(), caps)
+
+	// ---------------------------------------------------
+
+	perms := Permissions{}
 
 	printStatus(systemPrompt, perms)
 
@@ -118,7 +128,7 @@ func runChat(systemPrompt string) {
 			continue
 		}
 
-		// --- EXISTING CAPABILITY DETECTION (UNCHANGED) ---
+		// Capability detection + permission UI
 		blocked := false
 		detected := detect.DetectCapabilities(line, detect.FSReadRules)
 		for _, cap := range detected {
@@ -129,13 +139,8 @@ func runChat(systemPrompt string) {
 					blocked = true
 					break
 				}
-
-				// Existing flag (unchanged)
 				perms.FSRead = true
-
-				// NEW: record capability in canonical capability set
 				caps.Grant(app.CapFSRead)
-
 				printStatus(systemPrompt, perms)
 			}
 		}
@@ -143,7 +148,6 @@ func runChat(systemPrompt string) {
 			continue
 		}
 
-		// Normal LLM path
 		messages = append(messages, llm.Message{
 			Role:    "user",
 			Content: line,
@@ -169,6 +173,12 @@ func runChat(systemPrompt string) {
 		fmt.Println()
 
 		_ = stream.Close()
+
+		// Tool handling (already existing logic)
+		if msg, ok := app.TryHandleToolCall(router, reply.String()); ok {
+			messages = append(messages, *msg)
+			continue
+		}
 
 		messages = append(messages, llm.Message{
 			Role:    "assistant",
