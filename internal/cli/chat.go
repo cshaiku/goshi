@@ -2,75 +2,44 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"io"
 
-	"github.com/cshaiku/goshi/internal/app"
+	"github.com/cshaiku/goshi/internal/config"
 	"github.com/cshaiku/goshi/internal/llm"
+	"github.com/cshaiku/goshi/internal/llm/ollama"
 )
 
-// runChat runs the interactive chat loop with tool support.
-func runChat(
-	ctx context.Context,
-	client llm.Client,
-	systemPrompt string,
-) error {
+// runChat owns LLM client creation and streaming.
+func runChat(ctx context.Context, cfg config.Config, systemPrompt string) {
+	var client llm.Client
 
-	session := app.NewChatSession(client, systemPrompt)
-
-	router, err := app.NewToolRouter(".")
-	if err != nil {
-		return err
+	switch llm.SelectProvider(cfg) {
+	case "ollama":
+		// ollama.New takes a model string and returns *ollama.Client
+		client = ollama.New(cfg.Model)
+	default:
+		panic(errors.New("no supported LLM provider available"))
 	}
 
+	messages := []llm.Message{
+		{
+			Role:    "system",
+			Content: systemPrompt,
+		},
+	}
+
+	stream, err := client.Stream(ctx, messages)
+	if err != nil {
+		panic(err)
+	}
+	defer stream.Close()
+
 	for {
-		var input string
-		fmt.Print("\nYou: ")
-		_, err := fmt.Scanln(&input)
+		chunk, err := stream.Recv()
 		if err != nil {
-			if err == io.EOF {
-				return nil
-			}
-			return err
+			break
 		}
-
-		if input == "/quit" {
-			fmt.Println("Goodbye!")
-			return nil
-		}
-
-		session.AppendUserMessage(input)
-
-		stream, err := session.StreamResponse(ctx)
-		if err != nil {
-			return err
-		}
-
-		fmt.Print("Goshi: ")
-		var assistant string
-
-		for {
-			chunk, err := stream.Recv()
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				stream.Close()
-				return err
-			}
-
-			fmt.Print(chunk)
-			assistant += chunk
-		}
-
-		stream.Close()
-		fmt.Println()
-
-		session.AppendAssistantMessage(assistant)
-
-		// Tool-call detection
-		if toolMsg, ok := app.TryHandleToolCall(router, assistant); ok {
-			session.AppendSystemMessage(toolMsg.Content)
-		}
+		fmt.Print(chunk)
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/cshaiku/goshi/internal/app"
+	"github.com/cshaiku/goshi/internal/fs"
 	"github.com/spf13/cobra"
 )
 
@@ -91,20 +92,17 @@ func newFSWriteCommand() *cobra.Command {
 				return fmt.Errorf("no input on stdin (pipe content into fs write)")
 			}
 
-			svc, err := app.NewActionService(".")
+			guard, err := fs.NewGuard(".")
 			if err != nil {
 				return err
 			}
 
-			out, err := svc.RunAction("fs.write", map[string]any{
-				"path":    args[0],
-				"content": string(b),
-			})
+			prop, err := fs.ProposeWrite(guard, args[0], string(b))
 			if err != nil {
 				return err
 			}
 
-			return printJSON(out)
+			return printJSON(prop)
 		},
 	}
 }

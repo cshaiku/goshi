@@ -91,7 +91,7 @@ func (d *Dispatcher) Dispatch(action string, in ActionInput) (ActionOutput, erro
 			"path":          prop.Path,
 			"is_new_file":   prop.IsNewFile,
 			"diff":          prop.Diff,
-			"generated_at":  prop.GeneratedAt.Format("2006-01-02T15:04:05Z"),
+			"generated_at":  prop.GeneratedAt,
 		}, nil
 
 	default:

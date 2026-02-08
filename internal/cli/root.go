@@ -1,23 +1,21 @@
 package cli
 
 import (
+	"context"
 	"log"
 
-	"github.com/spf13/cobra"
-
-	"github.com/cshaiku/goshi/internal/app"
 	"github.com/cshaiku/goshi/internal/config"
+	"github.com/spf13/cobra"
 )
-
 
 func NewRootCmd() *cobra.Command {
 	cfg := config.Load()
 
-	var modelFlag  string
-  var llmFlag    string
+	var modelFlag string
+	var llmFlag string
 	var dryRunFlag bool
-  var yesFlag    bool
-  var jsonFlag   bool
+	var yesFlag bool
+	var jsonFlag bool
 
 	cmd := &cobra.Command{
 		Use:   "goshi",
@@ -31,28 +29,26 @@ func NewRootCmd() *cobra.Command {
 				cfg.LLMProvider = llmFlag
 			}
 
-			if modelFlag != "" {
-				cfg.Model = modelFlag
-			}
-
 			if cmd.Flag("dry-run").Changed {
 				cfg.DryRun = dryRunFlag
 			}
 
-      if cmd.Flag("yes").Changed {
-        cfg.Yes = yesFlag
-      }
+			if cmd.Flag("yes").Changed {
+				cfg.Yes = yesFlag
+			}
 
-      if cmd.Flag("json").Changed {
-      	cfg.JSON = jsonFlag
-      }
+			if cmd.Flag("json").Changed {
+				cfg.JSON = jsonFlag
+			}
 
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			ctx := context.Background()
+
 			runChat(
-				context.Background(),
-				client,
+				ctx,
+				cfg,
 				"You are Goshi, a protective, truthful, local-first AI assistant.",
 			)
 		},
@@ -72,19 +68,19 @@ func NewRootCmd() *cobra.Command {
 		"do not execute changes, only show what would happen",
 	)
 
-  cmd.PersistentFlags().BoolVar(
-  	&yesFlag,
-  	"yes",
-  	false,
-  	"automatically confirm execution",
-  )
+	cmd.PersistentFlags().BoolVar(
+		&yesFlag,
+		"yes",
+		false,
+		"automatically confirm execution",
+	)
 
-  cmd.PersistentFlags().BoolVar(
-  	&jsonFlag,
-  	"json",
-  	false,
-  	"output machine-readable JSON",
-  )
+	cmd.PersistentFlags().BoolVar(
+		&jsonFlag,
+		"json",
+		false,
+		"output machine-readable JSON",
+	)
 
 	cmd.Flags().StringVar(
 		&modelFlag,
@@ -93,20 +89,16 @@ func NewRootCmd() *cobra.Command {
 		"override model (env: GOSHI_MODEL)",
 	)
 
-  cmd.AddCommand(newDiagnosticsCmd(&cfg))
+	cmd.AddCommand(newDiagnosticsCmd(&cfg))
 	cmd.AddCommand(newDoctorCmd(&cfg))
-  cmd.AddCommand(newHealCmd(&cfg))
-
-  // File System
+	cmd.AddCommand(newHealCmd(&cfg))
 	cmd.AddCommand(newFSCommand())
 
 	return cmd
 }
-
 
 func Execute() {
 	if err := NewRootCmd().Execute(); err != nil {
 		log.Fatal(err)
 	}
 }
-
