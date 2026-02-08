@@ -1,64 +1,22 @@
 package app
 
 import (
-	"context"
+  "errors"
 
-	"github.com/cshaiku/goshi/internal/llm"
+  "github.com/cshaiku/goshi/internal/llm"
 )
 
-// ChatSession encapsulates pure chat state.
-// No IO, no CLI, no printing.
-type ChatSession struct {
-	Client   llm.Client
-	Messages []llm.Message
+var errSystemPromptMissing = errors.New("system prompt not provided")
+
+type App struct {
+  LLM *llm.Client
 }
 
-// NewChatSession creates a new chat session with an initial system prompt.
-func NewChatSession(client llm.Client, systemPrompt string) *ChatSession {
-	msgs := []llm.Message{
-		{
-			Role:    "system",
-			Content: systemPrompt,
-		},
-	}
+func New(systemPrompt *llm.SystemPrompt, backend llm.Backend) (*App, error) {
+  if systemPrompt == nil {
+    return nil, errSystemPromptMissing
+  }
 
-	return &ChatSession{
-		Client:   client,
-		Messages: msgs,
-	}
-}
-
-// StreamResponse streams a single assistant response.
-// The caller is responsible for:
-// - displaying output
-// - handling tool calls
-// - appending messages
-func (s *ChatSession) StreamResponse(
-	ctx context.Context,
-) (llm.Stream, error) {
-	return s.Client.Stream(ctx, s.Messages)
-}
-
-// AppendUserMessage appends a user message.
-func (s *ChatSession) AppendUserMessage(content string) {
-	s.Messages = append(s.Messages, llm.Message{
-		Role:    "user",
-		Content: content,
-	})
-}
-
-// AppendAssistantMessage appends an assistant message.
-func (s *ChatSession) AppendAssistantMessage(content string) {
-	s.Messages = append(s.Messages, llm.Message{
-		Role:    "assistant",
-		Content: content,
-	})
-}
-
-// AppendSystemMessage appends a system/tool message.
-func (s *ChatSession) AppendSystemMessage(content string) {
-	s.Messages = append(s.Messages, llm.Message{
-		Role:    "system",
-		Content: content,
-	})
+  client := llm.NewClient(systemPrompt, backend)
+  return &App{LLM: client}, nil
 }

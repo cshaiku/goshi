@@ -1,39 +1,8 @@
 package selfmodel
 
-type Model struct {
-	Model       ModelMeta        `yaml:"model"`
-	Application ApplicationMeta `yaml:"application"`
-	Commands    CommandsMeta    `yaml:"commands"`
-	Safety      SafetyMeta      `yaml:"safety_invariants"`
-	Deps        Dependencies    `yaml:"dependencies"`
-	Structure   Structure       `yaml:"project_structure"`
-}
-
-type ModelMeta struct {
-	ModelVersion string `yaml:"model_version"`
-	Enforcement  string `yaml:"enforcement"`
-}
-
-type ApplicationMeta struct {
-	Name string `yaml:"name"`
-}
-
-type CommandsMeta struct {
-	Required []struct {
-		Name string `yaml:"name"`
-	} `yaml:"required"`
-}
-
-type SafetyMeta struct {
-	DryRunDefault bool `yaml:"dry_run_default"`
-}
-
-type Dependencies struct {
-	RequiredBinaries []struct {
-		Name string `yaml:"name"`
-	} `yaml:"required_binaries"`
-}
-
-type Structure struct {
-	RequiredDirectories []string `yaml:"required_directories"`
-}
+// This file intentionally contains no parsed representation.
+// Parsed or structured interpretations of the self-model are
+// explicitly non-authoritative and must not be used for LLM injection.
+//
+// The only authoritative form of the self-model is its raw text
+// loaded from disk and injected verbatim into the system prompt.

@@ -10,6 +10,7 @@ import (
 	"github.com/cshaiku/goshi/internal/config"
 	"github.com/cshaiku/goshi/internal/llm"
 	"github.com/cshaiku/goshi/internal/llm/ollama"
+	"github.com/cshaiku/goshi/internal/selfmodel"
 )
 
 // runChat starts an interactive REPL-style chat session.
@@ -18,26 +19,32 @@ func runChat(systemPrompt string) {
 	cfg := config.Load()
 	ctx := context.Background()
 
-	// Select LLM client (local-first)
-	var client llm.Client
+	// Select LLM backend (local-first)
+	var backend llm.Backend
 	switch cfg.LLMProvider {
 	case "ollama", "", "auto":
-		client = ollama.New(cfg.Model)
+		backend = ollama.New(cfg.Model)
 	default:
 		fmt.Fprintf(os.Stderr, "unsupported LLM provider: %s\n", cfg.LLMProvider)
 		return
 	}
 
-	reader := bufio.NewReader(os.Stdin)
-
-	// Conversation state
-	messages := []llm.Message{
-		{Role: "system", Content: systemPrompt},
+	sp, err := llm.NewSystemPrompt(systemPrompt)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "invalid system prompt: %v\n", err)
+		return
 	}
 
-	fmt.Println(systemPrompt)
-	fmt.Println("Type /quit to exit.")
-	fmt.Println("-----------------------------------------------------")
+	client := llm.NewClient(sp, backend)
+
+	// --- HUMAN GREETING (UX ONLY) ---
+	if greeting := selfmodel.ExtractHumanGreeting(systemPrompt); greeting != "" {
+		fmt.Println(greeting)
+		fmt.Println("-----------------------------------------------------")
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	messages := []llm.Message{}
 
 	for {
 		fmt.Print("You: ")

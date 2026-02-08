@@ -1,99 +1,34 @@
 package cli
 
 import (
-	"log"
+	"fmt"
+	"os"
 
-	"github.com/cshaiku/goshi/internal/config"
 	"github.com/spf13/cobra"
 )
 
-func NewRootCmd() *cobra.Command {
-	cfg := config.Load()
+var runtime *Runtime
 
-	var modelFlag string
-	var llmFlag string
-	var dryRunFlag bool
-	var yesFlag bool
-	var jsonFlag bool
+var rootCmd = &cobra.Command{
+	Use:   "goshi",
+	Short: "Goshi is a local-first protective CLI agent",
 
-	cmd := &cobra.Command{
-		Use:   "goshi",
-		Short: "Goshi — Go-native AI CLI",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			if modelFlag != "" {
-				cfg.Model = modelFlag
-			}
+	// This restores the original behavior:
+	// running `goshi` immediately enters chat.
+	Run: func(cmd *cobra.Command, args []string) {
+		if runtime == nil || runtime.SystemPrompt == nil {
+			fmt.Fprintln(os.Stderr, "fatal: system prompt not initialized")
+			os.Exit(1)
+		}
 
-			if llmFlag != "" {
-				cfg.LLMProvider = llmFlag
-			}
-
-			if cmd.Flag("dry-run").Changed {
-				cfg.DryRun = dryRunFlag
-			}
-
-			if cmd.Flag("yes").Changed {
-				cfg.Yes = yesFlag
-			}
-
-			if cmd.Flag("json").Changed {
-				cfg.JSON = jsonFlag
-			}
-
-			return nil
-		},
-		Run: func(cmd *cobra.Command, args []string) {
-			runChat(
-				"You are Goshi, a protective, truthful, local-first AI assistant.",
-			)
-		},
-	}
-
-	cmd.PersistentFlags().StringVar(
-		&llmFlag,
-		"llm",
-		"",
-		"LLM provider: auto | xai | ollama",
-	)
-
-	cmd.PersistentFlags().BoolVar(
-		&dryRunFlag,
-		"dry-run",
-		true,
-		"do not execute changes, only show what would happen",
-	)
-
-	cmd.PersistentFlags().BoolVar(
-		&yesFlag,
-		"yes",
-		false,
-		"automatically confirm execution",
-	)
-
-	cmd.PersistentFlags().BoolVar(
-		&jsonFlag,
-		"json",
-		false,
-		"output machine-readable JSON",
-	)
-
-	cmd.Flags().StringVar(
-		&modelFlag,
-		"model",
-		"",
-		"override model (env: GOSHI_MODEL)",
-	)
-
-	cmd.AddCommand(newDiagnosticsCmd(&cfg))
-	cmd.AddCommand(newDoctorCmd(&cfg))
-	cmd.AddCommand(newHealCmd(&cfg))
-	cmd.AddCommand(newFSCommand())
-
-	return cmd
+		runChat(runtime.SystemPrompt.Raw())
+	},
 }
 
-func Execute() {
-	if err := NewRootCmd().Execute(); err != nil {
-		log.Fatal(err)
+func Execute(rt *Runtime) {
+	runtime = rt
+
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
 	}
 }

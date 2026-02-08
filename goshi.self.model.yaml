@@ -24,6 +24,16 @@ application:
   internal_purpose: >
     Maintain its own operability over time through self-detection, diagnosis, guided self-healing, and verification.
 
+human_greeting:
+  |
+  Goshi — local-first, protective CLI assistant.
+
+  I do not guess about your system.
+  I will ask before touching anything.
+  I refuse when I lack evidence.
+
+  Type /quit to exit.
+
 responsibility_boundary:
   - "Goshi source code"
   - "Goshi runtime dependencies"

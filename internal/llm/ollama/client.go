@@ -17,7 +17,6 @@ type Client struct {
 }
 
 func New(model string) *Client {
-	// Defensive defaulting
 	if model == "" || model == "ollama" {
 		model = "llama3"
 	}
@@ -30,12 +29,28 @@ func New(model string) *Client {
 
 func (c *Client) Stream(
 	ctx context.Context,
+	system string,
 	messages []llm.Message,
 ) (llm.Stream, error) {
 
+	reqMessages := make([]map[string]string, 0, len(messages)+1)
+
+	// Inject system prompt ONCE, authoritatively
+	reqMessages = append(reqMessages, map[string]string{
+		"role":    "system",
+		"content": system,
+	})
+
+	for _, m := range messages {
+		reqMessages = append(reqMessages, map[string]string{
+			"role":    m.Role,
+			"content": m.Content,
+		})
+	}
+
 	reqBody := map[string]any{
 		"model":    c.model,
-		"messages": messages,
+		"messages": reqMessages,
 		"stream":   true,
 	}
 
@@ -46,7 +61,7 @@ func (c *Client) Stream(
 
 	req, err := http.NewRequestWithContext(
 		ctx,
-		"POST",
+		http.MethodPost,
 		c.baseURL+"/api/chat",
 		bytes.NewReader(b),
 	)
@@ -71,6 +86,6 @@ func (c *Client) Stream(
 		)
 	}
 
+	// IMPORTANT: reuse the single authoritative stream implementation
 	return newStream(resp.Body), nil
 }
-
