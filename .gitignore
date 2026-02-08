@@ -1,13 +1,16 @@
-# Go
+# Go build artifacts
 /bin/
 *.exe
 *.test
 *.out
+goshi
+
 
 # Editor / OS
 .DS_Store
 .idea/
 .vscode/
+
 
 # Local env
 .env
