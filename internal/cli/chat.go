@@ -5,8 +5,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/cshaiku/goshi/internal/app"
 	"github.com/cshaiku/goshi/internal/config"
 	"github.com/cshaiku/goshi/internal/detect"
 	"github.com/cshaiku/goshi/internal/llm"
@@ -21,13 +23,13 @@ const (
 )
 
 // printStatus prints the self-model status without invoking the LLM.
-func printStatus(systemPrompt string) {
+func printStatus(systemPrompt string, perms Permissions) {
 	metrics := selfmodel.ComputeLawMetrics(systemPrompt)
 
 	enforcementLabel := "ENFORCEMENT STAGED"
 	enforcementColor := colorYellow
-	if metrics.EnforcementActive {
-		enforcementLabel = "ENFORCEMENT ACTIVE"
+	if perms.FSRead {
+		enforcementLabel = "ENFORCEMENT ACTIVE (FS_READ)"
 		enforcementColor = colorGreen
 	}
 
@@ -52,21 +54,17 @@ func printStatus(systemPrompt string) {
 	fmt.Println("-----------------------------------------------------")
 }
 
-// refuseFSRead emits a static refusal for filesystem reads.
 func refuseFSRead() {
-	fmt.Println("I do not have access to your local filesystem.")
-	fmt.Println("To read files, you must provide command output explicitly.")
-	fmt.Println("Example: run `ls` or `cat file` and paste the result.")
+	fmt.Println("Filesystem access denied.")
+	fmt.Println("Permission was not granted for this session.")
 	fmt.Println("-----------------------------------------------------")
 }
 
 // runChat starts an interactive REPL-style chat session.
-// It blocks on stdin until the user exits.
 func runChat(systemPrompt string) {
 	cfg := config.Load()
 	ctx := context.Background()
 
-	// Select LLM backend (local-first)
 	var backend llm.Backend
 	switch cfg.LLMProvider {
 	case "ollama", "", "auto":
@@ -84,8 +82,16 @@ func runChat(systemPrompt string) {
 
 	client := llm.NewClient(sp, backend)
 
-	// Initial status on startup
-	printStatus(systemPrompt)
+	// --- STEP 1: SESSION-SCOPED CAPABILITIES (PLUMBING ONLY) ---
+	caps := app.NewCapabilities()
+
+	// Existing permission struct remains untouched for now
+	perms := Permissions{}
+
+	cwd, _ := os.Getwd()
+	cwd, _ = filepath.EvalSymlinks(cwd)
+
+	printStatus(systemPrompt, perms)
 
 	reader := bufio.NewReader(os.Stdin)
 	messages := []llm.Message{}
@@ -104,23 +110,33 @@ func runChat(systemPrompt string) {
 			continue
 		}
 
-		// Local commands (no LLM)
 		switch line {
 		case "/quit":
 			return
 		case "/status":
-			printStatus(systemPrompt)
+			printStatus(systemPrompt, perms)
 			continue
 		}
 
-		// --- STEP 2: CAPABILITY GATING (fs_read) ---
+		// --- EXISTING CAPABILITY DETECTION (UNCHANGED) ---
 		blocked := false
-		caps := detect.DetectCapabilities(line, detect.FSReadRules)
-		for _, cap := range caps {
-			if cap == detect.CapabilityFSRead {
-				refuseFSRead()
-				blocked = true
-				break
+		detected := detect.DetectCapabilities(line, detect.FSReadRules)
+		for _, cap := range detected {
+			if cap == detect.CapabilityFSRead && !perms.FSRead {
+				allowed := RequestFSReadPermission(cwd)
+				if !allowed {
+					refuseFSRead()
+					blocked = true
+					break
+				}
+
+				// Existing flag (unchanged)
+				perms.FSRead = true
+
+				// NEW: record capability in canonical capability set
+				caps.Grant(app.CapFSRead)
+
+				printStatus(systemPrompt, perms)
 			}
 		}
 		if blocked {

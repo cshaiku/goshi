@@ -1,67 +1,56 @@
 package app
 
 import (
-	"errors"
+	"fmt"
 )
 
-// ToolCall represents a request coming from the LLM.
+type ToolAction interface {
+	Run(args map[string]string) (string, error)
+}
+
 type ToolCall struct {
 	Name string
 	Args map[string]any
 }
 
-// ToolResult is returned back to the LLM.
-type ToolResult struct {
-	Name   string
-	Output map[string]any
-	Error  string
-}
-
-var (
-	ErrToolNotAllowed = errors.New("tool not allowed")
-)
-
-// ToolRouter mediates between the LLM and local capabilities.
 type ToolRouter struct {
-	actions *ActionService
+	actions map[string]ToolAction
+	caps    *Capabilities
 }
 
-// NewToolRouter creates a ToolRouter scoped to a filesystem root.
-func NewToolRouter(root string) (*ToolRouter, error) {
-	actions, err := NewActionService(root)
-	if err != nil {
-		return nil, err
-	}
-
+func NewToolRouter(actions map[string]ToolAction, caps *Capabilities) *ToolRouter {
 	return &ToolRouter{
 		actions: actions,
-	}, nil
+		caps:    caps,
+	}
 }
 
-// Handle executes an allowed tool call and returns a structured result.
-// This function MUST remain side-effect safe.
-func (r *ToolRouter) Handle(call ToolCall) ToolResult {
-	// Hard allowlist — do not relax casually
-	switch call.Name {
-	case "fs.read", "fs.list", "fs.write":
-		// allowed
-	default:
-		return ToolResult{
-			Name:  call.Name,
-			Error: ErrToolNotAllowed.Error(),
+// Handle executes a tool call requested by the LLM.
+// NOTE: Step 1 — capabilities are NOT enforced yet.
+func (r *ToolRouter) Handle(call ToolCall) any {
+	action, ok := r.actions[call.Name]
+	if !ok {
+		return map[string]any{
+			"error": fmt.Sprintf("tool not allowed: %s", call.Name),
 		}
 	}
 
-	out, err := r.actions.RunAction(call.Name, call.Args)
+	// Convert args to map[string]string (existing behavior assumption)
+	args := map[string]string{}
+	for k, v := range call.Args {
+		if s, ok := v.(string); ok {
+			args[k] = s
+		}
+	}
+
+	result, err := action.Run(args)
 	if err != nil {
-		return ToolResult{
-			Name:  call.Name,
-			Error: err.Error(),
+		return map[string]any{
+			"error": err.Error(),
 		}
 	}
 
-	return ToolResult{
-		Name:   call.Name,
-		Output: out,
+	return map[string]any{
+		"result": result,
 	}
 }
