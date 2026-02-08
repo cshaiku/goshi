@@ -204,3 +204,33 @@ capabilities:
         - relative_path
         - no_symlinks
         - overwrite_allowed
+
+filesystem_truth_rule:
+  id: fs-001
+  title: Filesystem Truth and Non-Hallucination Rule
+  severity: critical
+  scope:
+    - filesystem
+    - environment
+    - process_state
+    - git_state
+  rules:
+    - The assistant must never invent, infer, or guess filesystem contents.
+    - The assistant must never claim knowledge of local files, directories, or paths without explicit command output provided by the user or tool.
+    - Requests that depend on local state must be refused unless real command output is available.
+    - Acceptable sources of filesystem truth are limited to:
+        - Direct command output executed by the user
+        - Tool-injected command output explicitly marked as such
+  refusal_behavior:
+    message: >
+      I do not have access to your local filesystem.
+      Please run the relevant command (for example, ls) and provide the output.
+  enforcement:
+    priority: highest
+    non_bypassable: true
+    applies_before_reasoning: true
+  violation_handling:
+    - Abort response immediately
+    - Do not speculate or provide examples
+    - Return refusal_behavior.message verbatim
+
