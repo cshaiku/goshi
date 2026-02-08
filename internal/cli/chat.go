@@ -8,10 +8,57 @@ import (
 	"strings"
 
 	"github.com/cshaiku/goshi/internal/config"
+	"github.com/cshaiku/goshi/internal/detect"
 	"github.com/cshaiku/goshi/internal/llm"
 	"github.com/cshaiku/goshi/internal/llm/ollama"
 	"github.com/cshaiku/goshi/internal/selfmodel"
 )
+
+const (
+	colorReset  = "\033[0m"
+	colorGreen  = "\033[32m"
+	colorYellow = "\033[33m"
+)
+
+// printStatus prints the self-model status without invoking the LLM.
+func printStatus(systemPrompt string) {
+	metrics := selfmodel.ComputeLawMetrics(systemPrompt)
+
+	enforcementLabel := "ENFORCEMENT STAGED"
+	enforcementColor := colorYellow
+	if metrics.EnforcementActive {
+		enforcementLabel = "ENFORCEMENT ACTIVE"
+		enforcementColor = colorGreen
+	}
+
+	fmt.Printf(
+		"Self-Model Law Index: %d lines · %d constraints · %s%s%s\n",
+		metrics.RuleLines,
+		metrics.ConstraintCount,
+		enforcementColor,
+		enforcementLabel,
+		colorReset,
+	)
+
+	if laws := selfmodel.ExtractPrimaryLaws(systemPrompt); len(laws) > 0 {
+		fmt.Printf("Primary Laws: %s\n", strings.Join(laws, " · "))
+	}
+
+	if greeting := selfmodel.ExtractHumanGreeting(systemPrompt); greeting != "" {
+		fmt.Println()
+		fmt.Println(greeting)
+	}
+
+	fmt.Println("-----------------------------------------------------")
+}
+
+// refuseFSRead emits a static refusal for filesystem reads.
+func refuseFSRead() {
+	fmt.Println("I do not have access to your local filesystem.")
+	fmt.Println("To read files, you must provide command output explicitly.")
+	fmt.Println("Example: run `ls` or `cat file` and paste the result.")
+	fmt.Println("-----------------------------------------------------")
+}
 
 // runChat starts an interactive REPL-style chat session.
 // It blocks on stdin until the user exits.
@@ -37,11 +84,8 @@ func runChat(systemPrompt string) {
 
 	client := llm.NewClient(sp, backend)
 
-	// --- HUMAN GREETING (UX ONLY) ---
-	if greeting := selfmodel.ExtractHumanGreeting(systemPrompt); greeting != "" {
-		fmt.Println(greeting)
-		fmt.Println("-----------------------------------------------------")
-	}
+	// Initial status on startup
+	printStatus(systemPrompt)
 
 	reader := bufio.NewReader(os.Stdin)
 	messages := []llm.Message{}
@@ -59,10 +103,31 @@ func runChat(systemPrompt string) {
 		if line == "" {
 			continue
 		}
-		if line == "/quit" {
+
+		// Local commands (no LLM)
+		switch line {
+		case "/quit":
 			return
+		case "/status":
+			printStatus(systemPrompt)
+			continue
 		}
 
+		// --- STEP 2: CAPABILITY GATING (fs_read) ---
+		blocked := false
+		caps := detect.DetectCapabilities(line, detect.FSReadRules)
+		for _, cap := range caps {
+			if cap == detect.CapabilityFSRead {
+				refuseFSRead()
+				blocked = true
+				break
+			}
+		}
+		if blocked {
+			continue
+		}
+
+		// Normal LLM path
 		messages = append(messages, llm.Message{
 			Role:    "user",
 			Content: line,

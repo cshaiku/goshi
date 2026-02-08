@@ -24,3 +24,16 @@ func ExtractHumanGreeting(raw string) string {
 
 	return doc.HumanGreeting
 }
+
+// SELF MODEL LAW INDEX
+type lawsDoc struct {
+	PrimaryLaws []string `yaml:"primary_laws"`
+}
+
+func ExtractPrimaryLaws(raw string) []string {
+	var doc lawsDoc
+	if err := yaml.Unmarshal([]byte(raw), &doc); err != nil {
+		return nil
+	}
+	return doc.PrimaryLaws
+}
