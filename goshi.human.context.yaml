@@ -1,125 +1,58 @@
-# Application Context Manifest
-# This file is the canonical source of intent for the application.
-# If code or documentation conflicts with this file, this file wins.
+# goshi.human.context.yaml
+#
+# Human-readable intent and philosophy for Goshi.
+# This file is NOT enforced by code.
+# If anything here conflicts with goshi.self.model.yaml,
+# the self-model is authoritative.
 
 meta:
+  role: "human intent explanation"
+  enforced: false
   operationalized_by: "goshi.self.model.yaml"
-  note: >
-    This document defines human intent and scope.
-    Enforceable rules live in the self-model.
 
 application:
   name: "Goshi"
-  one_sentence_purpose: >
-    A Go-native CLI client for a local ollama AI API that can inspect, diagnose,
-    and self-heal its own dependencies and execution environment to remain
-    functional over time.
+  tagline: "A protective servant for its own codebase"
 
-intent:
-  primary_problems:
-    - "Upstream API changes that break the CLI"
-    - "Missing or incompatible runtime dependencies required by Goshi"
-    - "Fragile CLI tooling that fails without guidance or recovery paths"
-    - "Difficult-to-diagnose failures in headless or CI environments"
-  target_users:
-    - "Developers using Goshi as a CLI interface to AI"
-    - "Contributors maintaining or extending Goshi"
-    - "CI systems invoking Goshi non-interactively"
-  non_goals:
-    - "Healing or managing arbitrary system environments"
-    - "Acting as a general-purpose system doctor"
-    - "Repairing other applications or developer tooling"
-    - "Making system-wide changes unrelated to Goshi’s operation"
+why_goshi_exists: >
+  Goshi exists to remain operable over time despite dependency changes,
+  API drift, and environmental breakage. It does not attempt to manage
+  the host system or fix unrelated software. Its responsibility is narrow
+  by design.
 
-principles:
-  values:
-    - "Self-reliance of the tool"
-    - "Explicit intent over implicit repair"
-    - "Deterministic behavior over heuristics"
-    - "Guidance over silent automation"
-  accepted_tradeoffs:
-    - "Limited scope in exchange for reliability"
-    - "User involvement when ambiguity exists"
-    - "Refusal to act outside Goshi’s responsibility boundary"
+design_philosophy:
+  - "Safety over autonomy"
+  - "Explicit user consent over silent action"
+  - "Deterministic behavior over clever heuristics"
+  - "Explain failures before attempting recovery"
 
-features:
-  - name: "Self-Detection"
-    why_it_exists: "Goshi must know whether it can run correctly"
-    problem_solved: "Opaque failures due to missing or incompatible dependencies"
-    explicit_exclusions:
-      - "No scanning of unrelated system components"
+what_goshi_is_not:
+  - "A general system repair tool"
+  - "A privileged system agent"
+  - "An autonomous self-modifying program"
+  - "A replacement for human judgment"
 
-  - name: "Self-Diagnosis"
-    why_it_exists: "Failures must be explained in Goshi-specific terms"
-    problem_solved: "Unclear error states when Goshi or its API integration breaks"
-    explicit_exclusions:
-      - "No diagnosis of external applications"
+human_expectations:
+  developers:
+    should_expect:
+      - "Clear explanations when Goshi cannot operate"
+      - "Guided, reviewable repair suggestions"
+      - "No filesystem changes without consent"
+    should_not_expect:
+      - "Automatic fixes without confirmation"
+      - "System-wide changes"
+      - "Hidden background behavior"
 
-  - name: "Repair Planning"
-    why_it_exists: "Developers must understand how Goshi could recover"
-    problem_solved: "Unsafe or blind attempts to fix CLI breakage"
-    explicit_exclusions:
-      - "No execution without explicit consent"
+change_intent:
+  allowed:
+    - "Improving diagnostics and explanations"
+    - "Adapting to upstream AI API changes"
+    - "Tightening safety boundaries"
+  disallowed:
+    - "Expanding scope beyond Goshi itself"
+    - "Reducing user visibility or consent"
+    - "Making safety rules optional"
 
-  - name: "Guarded Self-Healing"
-    why_it_exists: "Goshi must be able to restore its own operability"
-    problem_solved: "CLI breakage after dependency or API changes"
-    explicit_exclusions:
-      - "No system-wide changes beyond Goshi’s needs"
-
-  - name: "Verification"
-    why_it_exists: "A repaired CLI must prove it works"
-    problem_solved: "False success after attempted fixes"
-    explicit_exclusions:
-      - "No assumption-based verification"
-
-  - name: "Machine-Readable Output"
-    why_it_exists: "Automation and CI require deterministic signals"
-    problem_solved: "Brittle parsing of CLI output"
-    explicit_exclusions:
-      - "No mixed human and JSON output"
-
-constraints:
-  technical:
-    - "Single static Go binary"
-    - "No runtime dependency on Node.js"
-    - "Explicit command execution (no shell interpolation)"
-  product:
-    - "All self-healing is scoped to Goshi itself"
-    - "Dry-run is the default behavior"
-  ethical:
-    - "No hidden or unrelated system mutation"
-    - "No data exfiltration"
-  operational:
-    - "Must function over SSH and in CI"
-    - "Must remain usable even when partially broken"
-
-evolution_policy:
-  allowed_growth:
-    - "Improved self-diagnosis of Goshi failures"
-    - "Adaptation to AI API changes"
-    - "Better developer guidance during breakage"
-    - "Optional LLM-assisted explanations of failures"
-  disallowed_directions:
-    - "Becoming a general environment manager"
-    - "Healing systems unrelated to Goshi"
-    - "Autonomous repair without user consent"
-    - "Expanding scope beyond Goshi’s responsibility"
-
-operational_context:
-  source_of_truth: "This manifest"
-  data_ownership_stance: "All data remains local to the user"
-  privacy_posture: "No telemetry or reporting by default"
-  deployment_assumptions:
-    - "Executed locally or in CI"
-    - "Used as a CLI interface to AI services"
-
-success_criteria:
-  - "Goshi can detect when it is unable to function"
-  - "Failures are explained in actionable terms"
-  - "Self-healing never exceeds Goshi’s scope"
-  - "Developers can recover Goshi without guesswork"
-
-canonical_rule: >
-  If documentation, code, or features conflict with this manifest,
-  this manifest is authoritative.
+relationship_to_self_model: >
+  This document explains intent in human terms.
+  The self-model translates that intent into enforceable rules.
