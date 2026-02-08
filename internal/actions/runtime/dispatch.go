@@ -2,6 +2,8 @@ package runtime
 
 import (
 	"errors"
+	"os"
+	"time"
 
 	"github.com/cshaiku/goshi/internal/fs"
 )
@@ -82,20 +84,48 @@ func (d *Dispatcher) Dispatch(action string, in ActionInput) (ActionOutput, erro
 			return nil, ErrInvalidInput
 		}
 
-		prop, err := fs.ProposeWrite(d.guard, path, content)
+		resolved, err := d.guard.Resolve(path)
 		if err != nil {
 			return nil, err
 		}
 
+		var (
+			isNew    = true
+			baseHash = ""
+		)
+
+		if data, err := os.ReadFile(resolved); err == nil {
+			isNew = false
+			baseHash = fs.ComputeHash(data)
+		} else if !os.IsNotExist(err) {
+			return nil, err
+		}
+
+		contentHash := fs.ComputeHash([]byte(content))
+
+		p := fs.Proposal{
+			ID:          fs.ProposalID(resolved, isNew, baseHash, contentHash),
+			Path:        resolved,
+			IsNewFile:   isNew,
+			BaseHash:    baseHash,
+			ContentHash: contentHash,
+			GeneratedAt: time.Now().UTC(),
+		}
+
+		if err := fs.SaveProposal(p); err != nil {
+			return nil, err
+		}
+
 		return ActionOutput{
-			"path":          prop.Path,
-			"is_new_file":   prop.IsNewFile,
-			"diff":          prop.Diff,
-			"generated_at":  prop.GeneratedAt,
+			"id":           p.ID,
+			"path":         p.Path,
+			"is_new_file":  p.IsNewFile,
+			"base_hash":    p.BaseHash,
+			"content_hash": p.ContentHash,
+			"generated_at": p.GeneratedAt,
 		}, nil
 
 	default:
 		return nil, ErrUnknownAction
 	}
 }
-

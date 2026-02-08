@@ -1,9 +1,9 @@
 # Go build artifacts
-/bin/
 *.exe
 *.test
 *.out
 goshi
+/bin/
 
 
 # Editor / OS
