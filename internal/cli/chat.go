@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/cshaiku/goshi/internal/app"
@@ -22,167 +23,131 @@ const (
 	colorYellow = "\033[33m"
 )
 
-// printStatus prints the self-model status without invoking the LLM.
 func printStatus(systemPrompt string, perms Permissions) {
 	metrics := selfmodel.ComputeLawMetrics(systemPrompt)
-
-	enforcementLabel := "ENFORCEMENT STAGED"
-	enforcementColor := colorYellow
+	label := "ENFORCEMENT STAGED"
+	color := colorYellow
 	if perms.FSRead {
-		enforcementLabel = "ENFORCEMENT ACTIVE (FS_READ)"
-		enforcementColor = colorGreen
+		label = "ENFORCEMENT ACTIVE (FS_READ)"
+		color = colorGreen
 	}
-
-	fmt.Printf(
-		"Self-Model Law Index: %d lines · %d constraints · %s%s%s\n",
-		metrics.RuleLines,
-		metrics.ConstraintCount,
-		enforcementColor,
-		enforcementLabel,
-		colorReset,
-	)
-
+	fmt.Printf("Self-Model Law Index: %d lines · %d constraints · %s%s%s\n",
+		metrics.RuleLines, metrics.ConstraintCount, color, label, colorReset)
 	if laws := selfmodel.ExtractPrimaryLaws(systemPrompt); len(laws) > 0 {
 		fmt.Printf("Primary Laws: %s\n", strings.Join(laws, " · "))
 	}
-
 	if greeting := selfmodel.ExtractHumanGreeting(systemPrompt); greeting != "" {
-		fmt.Println()
-		fmt.Println(greeting)
+		fmt.Println("\n" + greeting)
 	}
-
 	fmt.Println("-----------------------------------------------------")
 }
 
 func refuseFSRead() {
-	fmt.Println("Filesystem access denied.")
-	fmt.Println("Permission was not granted for this session.")
+	fmt.Println("Filesystem access denied.\nPermission was not granted for this session.")
 	fmt.Println("-----------------------------------------------------")
 }
 
-// runChat starts an interactive REPL-style chat session.
 func runChat(systemPrompt string) {
 	cfg := config.Load()
 	ctx := context.Background()
-
 	var backend llm.Backend
-	switch cfg.LLMProvider {
-	case "ollama", "", "auto":
+	if cfg.LLMProvider == "ollama" || cfg.LLMProvider == "" || cfg.LLMProvider == "auto" {
 		backend = ollama.New(cfg.Model)
-	default:
-		fmt.Fprintf(os.Stderr, "unsupported LLM provider: %s\n", cfg.LLMProvider)
+	} else {
+		fmt.Fprintf(os.Stderr, "unsupported LLM provider\n")
 		return
 	}
 
-	sp, err := llm.NewSystemPrompt(systemPrompt)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "invalid system prompt: %v\n", err)
-		return
-	}
-
+	sp, _ := llm.NewSystemPrompt(systemPrompt)
 	client := llm.NewClient(sp, backend)
-
-	// --- STEP 2: SESSION CAPABILITIES + ACTION WIRING ---
-
 	caps := app.NewCapabilities()
-
+	perms := Permissions{}
 	cwd, _ := os.Getwd()
 	cwd, _ = filepath.EvalSymlinks(cwd)
-
-	actionSvc, err := app.NewActionService(cwd)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to initialize actions: %v\n", err)
-		return
-	}
-
+	actionSvc, _ := app.NewActionService(cwd)
 	router := app.NewToolRouter(actionSvc.Dispatcher(), caps)
 
-	// ---------------------------------------------------
-
-	perms := Permissions{}
-
 	printStatus(systemPrompt, perms)
-
 	reader := bufio.NewReader(os.Stdin)
 	messages := []llm.Message{}
 
 	for {
 		fmt.Print("You: ")
-
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			fmt.Println("\nExiting.")
-			return
-		}
-
+		line, _ := reader.ReadString('\n')
 		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
+		if line == "" { continue }
 
-		switch line {
-		case "/quit":
-			return
-		case "/status":
-			printStatus(systemPrompt, perms)
-			continue
-		}
-
-		// Capability detection + permission UI
-		blocked := false
 		detected := detect.DetectCapabilities(line, detect.FSReadRules)
-		for _, cap := range detected {
-			if cap == detect.CapabilityFSRead && !perms.FSRead {
-				allowed := RequestFSReadPermission(cwd)
-				if !allowed {
-					refuseFSRead()
-					blocked = true
-					break
+		handled := false
+
+		if len(detected) > 0 {
+			for _, cap := range detected {
+				if cap == detect.CapabilityFSRead && !perms.FSRead {
+					if !RequestFSReadPermission(cwd) {
+						refuseFSRead()
+						handled = true
+						break
+					}
+					perms.FSRead = true
+					caps.Grant(app.CapFSRead)
+					printStatus(systemPrompt, perms)
 				}
-				perms.FSRead = true
-				caps.Grant(app.CapFSRead)
-				printStatus(systemPrompt, perms)
+			}
+
+			if perms.FSRead && !handled {
+				// Robust regex with non-capturing groups for filler words
+				re := regexp.MustCompile(`(?i)(read|list|dir)(?:\s+(?:the|this|in|at|files?|folders?|dirs?|paths?))*\s*([^\s]+)?`)
+				matches := re.FindStringSubmatch(line)
+
+				if len(matches) > 1 {
+					verb := strings.ToLower(matches[3])
+					toolName := "fs.list"
+					toolPath := "."
+					if verb == "read" { toolName = "fs.read" }
+					if len(matches) > 2 && matches[4] != "" { toolPath = matches[4] }
+
+					result := router.Handle(app.ToolCall{Name: toolName, Args: map[string]any{"path": toolPath}})
+					fmt.Println("Goshi (Direct Action):")
+					printJSON(result) // Uses printJSON from fs.go
+					fmt.Println("-----------------------------------------------------")
+					handled = true
+				}
 			}
 		}
-		if blocked {
-			continue
-		}
 
-		messages = append(messages, llm.Message{
-			Role:    "user",
-			Content: line,
-		})
+		if handled { continue }
 
+		messages = append(messages, llm.Message{Role: "user", Content: line})
 		stream, err := client.Stream(ctx, messages)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			continue
-		}
+		if err != nil { continue }
 
 		fmt.Print("Goshi: ")
 		var reply strings.Builder
-
 		for {
 			chunk, err := stream.Recv()
-			if err != nil {
-				break
-			}
+			if err != nil { break }
 			fmt.Print(chunk)
 			reply.WriteString(chunk)
 		}
 		fmt.Println()
+		stream.Close()
 
-		_ = stream.Close()
-
-		// Tool handling (already existing logic)
-		if msg, ok := app.TryHandleToolCall(router, reply.String()); ok {
-			messages = append(messages, *msg)
-			continue
+		toolMsg, toolHandled := app.TryHandleToolCall(router, reply.String())
+		if toolHandled {
+			messages = append(messages, *toolMsg)
+			if stream, err = client.Stream(ctx, messages); err == nil {
+				fmt.Print("Goshi (Final): ")
+				for {
+					chunk, err := stream.Recv()
+					if err != nil { break }
+					fmt.Print(chunk)
+				}
+				fmt.Println()
+				stream.Close()
+			}
+		} else {
+			messages = append(messages, llm.Message{Role: "assistant", Content: reply.String()})
 		}
-
-		messages = append(messages, llm.Message{
-			Role:    "assistant",
-			Content: reply.String(),
-		})
+		fmt.Println("-----------------------------------------------------")
 	}
 }

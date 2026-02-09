@@ -1,8 +1,6 @@
 package app
 
 import (
-	"fmt"
-
 	"github.com/cshaiku/goshi/internal/actions/runtime"
 )
 
