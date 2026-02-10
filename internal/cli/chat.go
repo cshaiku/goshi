@@ -5,8 +5,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/cshaiku/goshi/internal/app"
@@ -23,7 +21,7 @@ const (
 	colorYellow = "\033[33m"
 )
 
-func printStatus(systemPrompt string, perms Permissions) {
+func printStatus(systemPrompt string, perms *Permissions) {
 	metrics := selfmodel.ComputeLawMetrics(systemPrompt)
 	label := "ENFORCEMENT STAGED"
 	color := colorYellow
@@ -61,6 +59,8 @@ func refuseFSWrite() {
 func runChat(systemPrompt string) {
 	cfg := config.Load()
 	ctx := context.Background()
+
+	// Initialize LLM backend
 	var backend llm.Backend
 	if cfg.LLMProvider == "ollama" || cfg.LLMProvider == "" || cfg.LLMProvider == "auto" {
 		backend = ollama.New(cfg.Model)
@@ -69,18 +69,15 @@ func runChat(systemPrompt string) {
 		return
 	}
 
-	sp, _ := llm.NewSystemPrompt(systemPrompt)
-	client := llm.NewClient(sp, backend)
-	caps := app.NewCapabilities()
-	perms := Permissions{}
-	cwd, _ := os.Getwd()
-	cwd, _ = filepath.EvalSymlinks(cwd)
-	actionSvc, _ := app.NewActionService(cwd)
-	router := app.NewToolRouter(actionSvc.Dispatcher(), caps)
+	// Create session encapsulating all chat context
+	session, err := NewChatSession(ctx, systemPrompt, backend)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to initialize chat session: %v\n", err)
+		return
+	}
 
-	printStatus(systemPrompt, perms)
+	printStatus(systemPrompt, session.Permissions)
 	reader := bufio.NewReader(os.Stdin)
-	messages := []llm.Message{}
 
 	for {
 		fmt.Print("You: ")
@@ -90,100 +87,99 @@ func runChat(systemPrompt string) {
 			continue
 		}
 
+		// PHASE 1: Listen - Record user input
+		session.AddUserMessage(line)
+
+		// PHASE 2: Detect intent - Check for implicit capability requests via regex
+		// This is a transition mechanism; eventually LLM should handle all intent
 		detected := detect.DetectCapabilities(line, detect.FSReadRules)
 		detected = append(detected, detect.DetectCapabilities(line, detect.FSWriteRules)...)
-		handled := false
 
-		if len(detected) > 0 {
-			for _, cap := range detected {
-				if cap == detect.CapabilityFSRead && !perms.FSRead {
-					if !RequestFSReadPermission(cwd) {
-						refuseFSRead()
-						handled = true
-						break
-					}
-					perms.FSRead = true
-					caps.Grant(app.CapFSRead)
-					printStatus(systemPrompt, perms)
+		permissionDenied := false
+		for _, cap := range detected {
+			if cap == detect.CapabilityFSRead && !session.HasPermission("FS_READ") {
+				if !RequestFSReadPermission(session.WorkingDir) {
+					refuseFSRead()
+					permissionDenied = true
+					session.DenyPermission("FS_READ")
+					break
 				}
-				if cap == detect.CapabilityFSWrite && !perms.FSWrite {
-					if !RequestFSWritePermission(cwd) {
-						refuseFSWrite()
-						handled = true
-						break
-					}
-					perms.FSWrite = true
-					caps.Grant(app.CapFSWrite)
-					printStatus(systemPrompt, perms)
-				}
+				session.GrantPermission("FS_READ")
+				printStatus(systemPrompt, session.Permissions)
 			}
-
-			if perms.FSRead && !handled {
-				// Robust regex with non-capturing groups for filler words
-				re := regexp.MustCompile(`(?i)(read|list|dir)(?:\s+(?:the|this|in|at|files?|folders?|dirs?|paths?))*\s*([^\s]+)?`)
-				matches := re.FindStringSubmatch(line)
-
-				if len(matches) > 1 {
-					verb := strings.ToLower(matches[1])
-					toolName := "fs.list"
-					toolPath := "."
-					if verb == "read" {
-						toolName = "fs.read"
-					}
-					if len(matches) > 2 && matches[2] != "" {
-						toolPath = matches[2]
-					}
-
-					result := router.Handle(app.ToolCall{Name: toolName, Args: map[string]any{"path": toolPath}})
-					fmt.Println("Goshi (Direct Action):")
-					printJSON(result) // Uses printJSON from fs.go
-					fmt.Println("-----------------------------------------------------")
-					handled = true
+			if cap == detect.CapabilityFSWrite && !session.HasPermission("FS_WRITE") {
+				if !RequestFSWritePermission(session.WorkingDir) {
+					refuseFSWrite()
+					permissionDenied = true
+					session.DenyPermission("FS_WRITE")
+					break
 				}
+				session.GrantPermission("FS_WRITE")
+				printStatus(systemPrompt, session.Permissions)
 			}
 		}
 
-		if handled {
+		if permissionDenied {
 			continue
 		}
 
-		messages = append(messages, llm.Message{Role: "user", Content: line})
-		stream, err := client.Stream(ctx, messages)
+		// PHASE 3: Plan - Get LLM response with streaming
+		collector := llm.NewResponseCollector(llm.NewStructuredParser())
+		stream, err := session.Client.Backend().Stream(ctx, session.Client.System().Raw(), session.ConvertMessagesToLegacy())
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "LLM error: %v\n", err)
 			continue
 		}
 
 		fmt.Print("Goshi: ")
-		var reply strings.Builder
 		for {
 			chunk, err := stream.Recv()
 			if err != nil {
 				break
 			}
 			fmt.Print(chunk)
-			reply.WriteString(chunk)
+			collector.AddChunk(chunk)
 		}
 		fmt.Println()
 		stream.Close()
 
-		toolMsg, toolHandled := app.TryHandleToolCall(router, reply.String())
-		if toolHandled {
-			messages = append(messages, *toolMsg)
-			if stream, err = client.Stream(ctx, messages); err == nil {
-				fmt.Print("Goshi (Final): ")
-				for {
-					chunk, err := stream.Recv()
-					if err != nil {
-						break
-					}
-					fmt.Print(chunk)
-				}
-				fmt.Println()
-				stream.Close()
-			}
-		} else {
-			messages = append(messages, llm.Message{Role: "assistant", Content: reply.String()})
+		// PHASE 4: Parse - Extract structured response and validate tool calls
+		response := collector.GetFullResponse()
+		session.AddAssistantTextMessage(response) // Log the full response first
+
+		parseResult, err := collector.Parse()
+		if err != nil || parseResult == nil {
+			// No structured tool call detected - just text response
+			fmt.Println("-----------------------------------------------------")
+			continue
 		}
+
+		// Check if this is a tool action response
+		if parseResult.Response.Type != llm.ResponseTypeAction || parseResult.Response.Action == nil {
+			// Not a tool action - just text
+			fmt.Println("-----------------------------------------------------")
+			continue
+		}
+
+		// PHASE 5: Act - Execute the tool with validation
+		toolName := parseResult.Response.Action.Tool
+		toolArgs := parseResult.Response.Action.Args
+
+		// Validate the tool call against schema and permissions
+		result := session.ToolRouter.Handle(app.ToolCall{
+			Name: toolName,
+			Args: toolArgs,
+		})
+
+		// Log tool execution and result
+		session.AddAssistantActionMessage(toolName, toolArgs)
+		session.AddToolResultMessage(toolName, result)
+
+		fmt.Println("Goshi (Action Result):")
+		printJSON(result)
+
+		// PHASE 6: Report - Optional follow-up from LLM based on action result
+		// For now, we'll skip this unless specifically implemented
 		fmt.Println("-----------------------------------------------------")
 	}
 }

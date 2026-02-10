@@ -11,34 +11,61 @@ import (
 	"github.com/cshaiku/goshi/internal/llm"
 )
 
-type Client struct {
-	baseURL string
-	model   string
-}
-
-// toolInstructions explicitly defines the JSON schema for local filesystem tools.
-// This prevents the LLM from guessing file contents and forces it to use the toolchain.
+// toolInstructions defines the structured format for tool calling
 const toolInstructions = `
-# TOOL USE
-If the user asks to list files, read a file, or write a file, you MUST NOT guess the contents.
-Instead, you MUST output a single JSON object using one of the following formats:
+## IMPORTANT: Tool Usage Instructions
 
-- To list a directory: {"tool": "fs.list", "args": {"path": "."}}
-- To read a file: {"tool": "fs.read", "args": {"path": "filename.txt"}}
-- To write a file: {"tool": "fs.write", "args": {"path": "filename.txt", "content": "file contents here"}}
+When the user asks you to perform filesystem operations (list files, read files, write files),
+you MUST call a tool. Do NOT attempt to guess or fabricate file contents.
 
-Do not provide conversational filler when triggering a tool. 
-Output ONLY the JSON object.
+### Response Format
+
+When calling a tool, respond with ONLY a valid JSON object in one of these exact formats:
+
+**To list directory contents:**
+{"type": "action", "action": {"tool": "fs.list", "args": {"path": "."}}}
+
+**To read a file:**
+{"type": "action", "action": {"tool": "fs.read", "args": {"path": "README.md"}}}
+
+**To write to a file:**
+{"type": "action", "action": {"tool": "fs.write", "args": {"path": "file.txt", "content": "content here"}}}
+
+**For planning/reasoning (NOT a tool call):**
+{"type": "text", "text": "I will read the README file to understand the project"}
+
+### Rules
+
+1. If the user asks about file contents: ALWAYS use fs.read
+2. If the user asks to list files: ALWAYS use fs.list
+3. If the user asks to write/create/edit files: ALWAYS use fs.write
+4. NEVER guess file contents - always use the tools
+5. Respond only with JSON when using tools
+6. Respond with natural text for planning and reasoning
 `
 
+type Client struct {
+	baseURL  string
+	model    string
+	toolDefs string // Tool definitions to include in prompt
+}
+
+// NewClient creates an Ollama backend client
 func New(model string) *Client {
 	if model == "" || model == "ollama" {
 		model = "llama3"
 	}
 	return &Client{
-		baseURL: "http://127.0.0.1:11434",
-		model:   model,
+		baseURL:  "http://127.0.0.1:11434",
+		model:    model,
+		toolDefs: "",
 	}
+}
+
+// SetToolDefinitions sets the tool definitions to include in the system prompt
+// toolDefs should be a JSON string representing available tools
+func (c *Client) SetToolDefinitions(toolDefs string) {
+	c.toolDefs = toolDefs
 }
 
 func (c *Client) Stream(
