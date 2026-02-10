@@ -98,11 +98,59 @@ If the target file has changed since the proposal was created, apply will fail.
 
 ---
 
+## Execution Pipeline
+
+goshi follows a deterministic, auditable pipeline:
+
+1. **Detect** — Scan environment for binaries, configuration issues, and safety concerns
+2. **Diagnose** — Analyze detected issues and assign severity levels  
+3. **Repair** — Plan corrective actions 
+4. **Execute** — Apply actions (dry-run by default)
+5. **Verify** — Confirm repairs were successful
+
+Each phase is independent, deterministic, and inspectable.
+
+---
+
+## Testing
+
+goshi includes comprehensive test coverage for reliability and security:
+
+- **Config** (51 tests): Configuration validation, environment variable handling, parameter bounds
+- **Filesystem Safety** (13 tests): Path traversal protection, symlink handling, guard mechanisms
+- **Protocol** (8 tests): Request parsing, manifest validation, JSON handling
+- **Detection** (7 tests): Binary detection, PATH handling
+- **Diagnosis** (6 tests): Issue creation, severity assignment
+- **Execution** (9 tests): Dry-run vs actual execution, error handling
+- **Verification** (8 tests): Pass/fail determination, failure reporting
+
+**Total: 89+ passing tests** across core packages.
+
+Run all tests:
+
+```bash
+go test ./internal/...
+```
+
+Run tests for a specific package:
+
+```bash
+go test -v ./internal/config
+```
+
+---
+
 ## Build & Run
 
 ```bash
 go build -o goshi
-./goshi
+./goshi --help
+```
+
+Build with make:
+
+```bash
+make build
 ```
 
 ---
