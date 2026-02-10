@@ -104,7 +104,7 @@ internal/tui/
 
 ## Integration with Chat Session
 
-The TUI integrates with Goshi's existing chat session management:
+The TUI integrates with Goshi's existing chat session management and LLM backend:
 
 ```go
 // TUI mode initialization
@@ -112,11 +112,21 @@ session, _ := session.NewChatSession(ctx, systemPrompt, backend)
 tui.Run(systemPrompt, session)
 ```
 
+**LLM Streaming Flow:**
+1. User sends message → `handleSendMessage()` called
+2. Message added to session history
+3. Async `streamLLMResponse()` command started
+4. Backend streams response chunks
+5. `llmCompleteMsg` sent when streaming finishes
+6. Assistant message finalized and added to session
+
 This ensures:
 - ✅ Permission tracking across TUI and CLI modes
 - ✅ Message history persistence
 - ✅ Audit logging
 - ✅ Self-model enforcement
+- ✅ Real-time LLM response streaming
+- ✅ Async non-blocking UI updates
 
 ## Development Phases
 
@@ -134,20 +144,26 @@ This ensures:
 - Integrated with chat session
 - Mode routing in root command
 
-### 🔄 Phase 4: Testing & Documentation (Current)
+### ✅ Phase 4: Testing & Documentation
 - Build verification
 - Usage documentation
 - Updated help text
+- Unit tests for TUI components
 
-### 📋 Phase 5: LLM Streaming (Planned)
-- Real-time streaming integration
-- Tool execution in TUI
-- Loading indicators
+### ✅ Phase 5: LLM Streaming
+- **Real-time LLM response streaming**
+- Async command pattern with Bubble Tea
+- Progressive message display
+- Error handling for LLM failures
+- Session integration (AddUserMessage/AddAssistantTextMessage)
+- Loading indicators ("Thinking..." + streaming cursor ▊)
 
 ### 📋 Phase 6: Polish (Planned)
+- Tool execution in TUI context
+- Response parsing and action handling
 - Error handling improvements
 - Performance optimization
-- Final testing
+- Final integration testing
 
 ## Testing
 
@@ -161,10 +177,21 @@ This ensures:
 2. **Type a message** and press `Ctrl+S` to send
 
 3. **Scroll through history** with arrow keys
+The TUI uses Bubble Tea's testable architecture with comprehensive unit tests:
 
-4. **Quit** with `Ctrl+C` or `Esc`
+**Current Test Coverage:**
+- `TestNewModel` - Model initialization
+- `TestModelInit` - Init command behavior
+- `TestModelQuitOnEscape` - Quit on Esc key
+- `TestWindowSizeUpdate` - Window resize handling  
+- `TestRenderHeader` - Header rendering
+- `TestLLMCompleteMessage` - LLM response completion
+- `TestLLMErrorMessage` - LLM error handling
 
-5. **Test headless mode:**
+Run tests:
+```bash
+go test ./internal/tui -v
+```
    ```bash
    echo "Hello" | ./bin/goshi --headless
    ```

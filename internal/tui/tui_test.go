@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -86,5 +87,79 @@ func TestRenderHeader(t *testing.T) {
 
 	if !strings.Contains(header, "GOSHI TUI") {
 		t.Error("expected header to contain 'GOSHI TUI'")
+	}
+}
+
+func TestLLMCompleteMessage(t *testing.T) {
+	m := newModel("test", nil)
+	m.ready = true
+	m.streaming = true
+
+	// Add a message in progress
+	m.messages = append(m.messages, Message{
+		Role:       "assistant",
+		Content:    "",
+		InProgress: true,
+	})
+
+	// Simulate LLM completion
+	completeMsg := llmCompleteMsg{
+		fullResponse: "Test response from LLM",
+	}
+
+	updatedModel, _ := m.Update(completeMsg)
+	updated := updatedModel.(model)
+
+	if updated.streaming {
+		t.Error("expected streaming to be false after completion")
+	}
+
+	if updated.statusLine != "Ready" {
+		t.Errorf("expected status 'Ready', got %q", updated.statusLine)
+	}
+
+	if len(updated.messages) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(updated.messages))
+	}
+
+	if updated.messages[0].InProgress {
+		t.Error("expected message InProgress to be false")
+	}
+
+	if updated.messages[0].Content != "Test response from LLM" {
+		t.Errorf("expected content 'Test response from LLM', got %q", updated.messages[0].Content)
+	}
+}
+
+func TestLLMErrorMessage(t *testing.T) {
+	m := newModel("test", nil)
+	m.ready = true
+	m.streaming = true
+
+	// Add a message in progress
+	m.messages = append(m.messages, Message{
+		Role:       "assistant",
+		Content:    "partial",
+		InProgress: true,
+	})
+
+	// Simulate LLM error
+	errMsg := llmErrorMsg{
+		err: fmt.Errorf("test error"),
+	}
+
+	updatedModel, _ := m.Update(errMsg)
+	updated := updatedModel.(model)
+
+	if updated.streaming {
+		t.Error("expected streaming to be false after error")
+	}
+
+	if updated.err == nil {
+		t.Error("expected error to be set")
+	}
+
+	if len(updated.messages) != 0 {
+		t.Errorf("expected in-progress message to be removed, got %d messages", len(updated.messages))
 	}
 }

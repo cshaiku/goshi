@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/cshaiku/goshi/internal/llm"
 	"github.com/cshaiku/goshi/internal/selfmodel"
 	"github.com/cshaiku/goshi/internal/session"
 )
@@ -25,8 +26,9 @@ func Run(systemPrompt string, sess *session.ChatSession) error {
 
 // Message represents a chat message
 type Message struct {
-	Role    string // "user" or "assistant"
-	Content string
+	Role       string // "user" or "assistant"
+	Content    string
+	InProgress bool // True if still streaming
 }
 
 // model is the TUI application state
@@ -46,6 +48,9 @@ type model struct {
 	// Integration
 	chatSession  *session.ChatSession
 	systemPrompt string
+
+	// Streaming state
+	streaming bool
 }
 
 func newModel(systemPrompt string, sess *session.ChatSession) model {
@@ -109,6 +114,52 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ready = true
 		}
 
+	case llmChunkMsg:
+		// Update the last message (assistant) with new content
+		if len(m.messages) > 0 && m.messages[len(m.messages)-1].InProgress {
+			m.messages[len(m.messages)-1].Content += msg.chunk
+			m.updateViewportContent()
+		}
+		return m, nil
+
+	case llmCompleteMsg:
+		// Finalize the assistant message
+		m.streaming = false
+		m.statusLine = "Ready"
+
+		if len(m.messages) > 0 && m.messages[len(m.messages)-1].InProgress {
+			m.messages[len(m.messages)-1].InProgress = false
+
+			// Use parsed response if available
+			if msg.parseResult != nil && msg.parseResult.Response != nil {
+				m.messages[len(m.messages)-1].Content = msg.parseResult.Response.Text
+				if m.chatSession != nil {
+					m.chatSession.AddAssistantTextMessage(msg.parseResult.Response.Text)
+				}
+			} else {
+				m.messages[len(m.messages)-1].Content = msg.fullResponse
+				if m.chatSession != nil {
+					m.chatSession.AddAssistantTextMessage(msg.fullResponse)
+				}
+			}
+
+			m.updateViewportContent()
+		}
+		return m, nil
+
+	case llmErrorMsg:
+		m.streaming = false
+		m.err = msg.err
+		m.statusLine = "Error"
+
+		// Remove the in-progress message
+		if len(m.messages) > 0 && m.messages[len(m.messages)-1].InProgress {
+			m.messages = m.messages[:len(m.messages)-1]
+		}
+
+		m.updateViewportContent()
+		return m, nil
+
 	case errMsg:
 		m.err = msg
 		return m, nil
@@ -145,31 +196,98 @@ func (m model) View() string {
 // Custom message types
 type errMsg error
 
+type llmChunkMsg struct {
+	chunk string
+}
+
+type llmCompleteMsg struct {
+	fullResponse string
+	parseResult  *llm.ParseResult
+}
+
+type llmErrorMsg struct {
+	err error
+}
+
 func (m model) handleSendMessage() (tea.Model, tea.Cmd) {
 	userInput := strings.TrimSpace(m.textarea.Value())
 	if userInput == "" {
 		return m, nil
 	}
 
-	// Add message
+	// Don't allow sending while streaming
+	if m.streaming {
+		return m, nil
+	}
+
+	// Add user message to history
 	m.messages = append(m.messages, Message{
 		Role:    "user",
 		Content: userInput,
 	})
 
+	// Add to session
+	if m.chatSession != nil {
+		m.chatSession.AddUserMessage(userInput)
+	}
+
 	m.textarea.Reset()
 	m.updateViewportContent()
 
-	// TODO Phase 4: Integrate with LLM
+	// Start streaming assistant response
 	m.statusLine = "Thinking..."
+	m.streaming = true
+
+	// Add placeholder for assistant message
 	m.messages = append(m.messages, Message{
-		Role:    "assistant",
-		Content: fmt.Sprintf("[Phase 4 TODO: LLM integration] Echo: %s", userInput),
+		Role:       "assistant",
+		Content:    "",
+		InProgress: true,
 	})
 	m.updateViewportContent()
-	m.statusLine = "Ready"
 
-	return m, nil
+	return m, streamLLMResponse(m.chatSession)
+}
+
+// streamLLMResponse creates a command that streams LLM response chunks
+func streamLLMResponse(sess *session.ChatSession) tea.Cmd {
+	return func() tea.Msg {
+		// Get stream from backend
+		stream, err := sess.Client.Backend().Stream(
+			sess.Context,
+			sess.Client.System().Raw(),
+			sess.ConvertMessagesToLegacy(),
+		)
+		if err != nil {
+			return llmErrorMsg{err: err}
+		}
+		defer stream.Close()
+
+		// Collect response
+		collector := llm.NewResponseCollector(llm.NewStructuredParser())
+
+		// Stream chunks back to TUI
+		for {
+			chunk, err := stream.Recv()
+			if err != nil {
+				// Stream completed
+				break
+			}
+			collector.AddChunk(chunk)
+
+			// TODO: Send individual chunks for progressive display
+			// For now, we accumulate and send at end
+		}
+
+		// Parse complete response
+		fullResponse := collector.GetFullResponse()
+		parseResult, _ := collector.Parse()
+
+		return llmCompleteMsg{
+			fullResponse: fullResponse,
+			parseResult:  parseResult,
+		}
+	}
 }
 
 func (m *model) updateViewportContent() {
@@ -178,11 +296,19 @@ func (m *model) updateViewportContent() {
 	sb.WriteString(styleWelcome("Welcome to Goshi TUI\n\nCommands:\n  Ctrl+S - Send message\n  Ctrl+C/Esc - Quit\n  ↑/↓ - Scroll chat\n"))
 	sb.WriteString("\n")
 
+	if m.streaming {
+		sb.WriteString(styleStatus("✨ Streaming response...\n\n"))
+	}
+
 	for _, msg := range m.messages {
 		if msg.Role == "user" {
 			sb.WriteString(styleUserMessage(msg.Content))
 		} else {
-			sb.WriteString(styleAssistantMessage(msg.Content))
+			content := msg.Content
+			if msg.InProgress {
+				content += "▊" // Show cursor for streaming
+			}
+			sb.WriteString(styleAssistantMessage(content))
 		}
 		sb.WriteString("\n\n")
 	}
