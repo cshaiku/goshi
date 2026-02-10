@@ -13,6 +13,7 @@ import (
 	"github.com/cshaiku/goshi/internal/exec"
 	"github.com/cshaiku/goshi/internal/repair"
 	"github.com/cshaiku/goshi/internal/verify"
+	"gopkg.in/yaml.v3"
 )
 
 func confirmExecution() bool {
@@ -28,7 +29,11 @@ func confirmExecution() bool {
 }
 
 func newHealCmd(cfg *config.Config) *cobra.Command {
-	return &cobra.Command{
+	var format string
+	var jsonCompat bool
+	var dryRun bool
+	var yes bool
+	cmd := &cobra.Command{
 		Use:   "heal",
 		Short: "Repair detected environment issues",
 		Long: `Analyze your environment and automatically repair identified issues.
@@ -47,9 +52,10 @@ making any changes. You must explicitly disable dry-run mode to actually execute
 repairs. Confirmation is required before execution (unless --yes is given).
 
 FLAGS:
-  --dry-run=false    Execute repairs (default: true for safety)
-  --yes              Skip confirmation prompts and proceed automatically
-  --json             Output machine-readable JSON instead of human-friendly text
+  --dry-run=true      Run in dry-run mode (default: true for safety)
+  --yes               Skip confirmation prompts and proceed automatically
+  --format=human      Output format: json, yaml, or human (default: human)
+  --json              (DEPRECATED) Use --format=json instead
 
 EXAMPLES:
 
@@ -66,7 +72,7 @@ EXAMPLES:
      Use with caution - automatically repairs found issues without asking.
 
   4. Get machine-readable output for automation:
-     $ goshi heal --json
+     $ goshi heal --format=json
      Returns JSON output showing the mode and status.
 
   5. Full pipeline: preview, then execute:
@@ -87,120 +93,144 @@ SEE ALSO:
   goshi doctor        - Check environment health without repairing
   goshi help          - Show general help information`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			// --- JSON mode (machine output only) ---
-			if cfg.JSON {
+			cfg.DryRun = dryRun
+			cfg.Yes = yes
+			outFmt := format
+			if outFmt == "" && jsonCompat {
+				outFmt = "json"
+			}
+			switch outFmt {
+			case "json":
 				mode := "execute"
 				if cfg.DryRun {
 					mode = "dry-run"
 				}
-
 				out, err := json.MarshalIndent(map[string]any{
 					"mode": mode,
 				}, "", "  ")
 				if err != nil {
 					return err
 				}
-
 				fmt.Println(string(out))
 				return nil
-			}
-
-			// --- human banner ---
-			mode := "EXECUTE"
-			if cfg.DryRun {
-				mode = "DRY-RUN"
-			}
-			fmt.Printf("Heal mode: %s\n", mode)
-
-			// --- detect ---
-			d := &detect.BasicDetector{
-				Binaries: []string{
-					"git",
-					"curl",
-					"jq",
-				},
-			}
-
-			res, err := d.Detect()
-			if err != nil {
-				return err
-			}
-
-			// --- diagnose ---
-			dg := &diagnose.BasicDiagnoser{}
-			diag, err := dg.Diagnose(res)
-			if err != nil {
-				return err
-			}
-
-			if len(diag.Issues) == 0 {
-				fmt.Println("✔ nothing to repair")
+			case "yaml":
+				mode := "execute"
+				if cfg.DryRun {
+					mode = "dry-run"
+				}
+				data, err := yaml.Marshal(map[string]any{
+					"mode": mode,
+				})
+				if err != nil {
+					return err
+				}
+				fmt.Print(string(data))
 				return nil
-			}
+			case "", "human":
+				// --- human banner ---
+				mode := "EXECUTE"
+				if cfg.DryRun {
+					mode = "DRY-RUN"
+				}
+				fmt.Printf("Heal mode: %s\n", mode)
 
-			// --- plan ---
-			r := &repair.BasicRepairer{}
-			plan, err := r.Plan(diag)
-			if err != nil {
-				return err
-			}
-
-			if len(plan.Actions) == 0 {
-				fmt.Println("No repair actions available")
-				return nil
-			}
-
-			// --- confirmation gate ---
-			if !cfg.DryRun {
-				fmt.Println("The following actions will be executed:")
-				for _, a := range plan.Actions {
-					fmt.Printf(" - %v\n", a.Command)
+				// --- detect ---
+				d := &detect.BasicDetector{
+					Binaries: []string{
+						"git",
+						"curl",
+						"jq",
+					},
 				}
 
-				if !cfg.Yes {
-					if !confirmExecution() {
-						fmt.Println("Aborted.")
-						return nil
+				res, err := d.Detect()
+				if err != nil {
+					return err
+				}
+
+				// --- diagnose ---
+				dg := &diagnose.BasicDiagnoser{}
+				diag, err := dg.Diagnose(res)
+				if err != nil {
+					return err
+				}
+
+				if len(diag.Issues) == 0 {
+					fmt.Println("✔ nothing to repair")
+					return nil
+				}
+
+				// --- plan ---
+				r := &repair.BasicRepairer{}
+				plan, err := r.Plan(diag)
+				if err != nil {
+					return err
+				}
+
+				if len(plan.Actions) == 0 {
+					fmt.Println("No repair actions available")
+					return nil
+				}
+
+				// --- confirmation gate ---
+				if !cfg.DryRun {
+					fmt.Println("The following actions will be executed:")
+					for _, a := range plan.Actions {
+						fmt.Printf(" - %v\n", a.Command)
+					}
+
+					if !cfg.Yes {
+						if !confirmExecution() {
+							fmt.Println("Aborted.")
+							return nil
+						}
 					}
 				}
-			}
 
-			// --- execute ---
-			ex := &exec.Executor{
-				DryRun: cfg.DryRun,
-			}
-
-			if err := ex.Execute(plan); err != nil {
-				// execution failure = fatal
-				os.Exit(3)
-			}
-
-			// --- verify ---
-			v := &verify.BasicVerifier{
-				Binaries: []string{
-					"git",
-					"curl",
-					"jq",
-				},
-			}
-
-			vr, err := v.Verify()
-			if err != nil {
-				return err
-			}
-
-			if vr.Passed {
-				fmt.Println("✔ verification passed")
-			} else {
-				fmt.Println("✖ verification failed:")
-				for _, f := range vr.Failures {
-					fmt.Println(" -", f)
+				// --- execute ---
+				ex := &exec.Executor{
+					DryRun: cfg.DryRun,
 				}
-				os.Exit(2)
-			}
 
-			return nil
+				if err := ex.Execute(plan); err != nil {
+					// execution failure = fatal
+					os.Exit(3)
+				}
+
+				// --- verify ---
+				v := &verify.BasicVerifier{
+					Binaries: []string{
+						"git",
+						"curl",
+						"jq",
+					},
+				}
+
+				vr, err := v.Verify()
+				if err != nil {
+					return err
+				}
+
+				if vr.Passed {
+					fmt.Println("✔ verification passed")
+				} else {
+					fmt.Println("✖ verification failed:")
+					for _, f := range vr.Failures {
+						fmt.Println(" -", f)
+					}
+					os.Exit(2)
+				}
+
+				return nil
+			default:
+				return fmt.Errorf("unknown format: %s (use 'json', 'yaml', or 'human')", outFmt)
+			}
 		},
 	}
+	// Standardized output format flag
+	cmd.Flags().StringVar(&format, "format", "", "Output format: json, yaml, or human (default: human)")
+	cmd.Flags().BoolVar(&jsonCompat, "json", false, "(DEPRECATED) Output JSON (use --format=json)")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", true, "Run in dry-run mode (default: true)")
+	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompts")
+	return cmd
 }

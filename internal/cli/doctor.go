@@ -10,10 +10,13 @@ import (
 	"github.com/cshaiku/goshi/internal/config"
 	"github.com/cshaiku/goshi/internal/detect"
 	"github.com/cshaiku/goshi/internal/diagnose"
+	"gopkg.in/yaml.v3"
 )
 
 func newDoctorCmd(cfg *config.Config) *cobra.Command {
-	return &cobra.Command{
+	var format string
+	var jsonCompat bool
+	cmd := &cobra.Command{
 		Use:   "doctor",
 		Short: "Check environment health",
 		Long: `Diagnose environment health and identify issues.
@@ -34,10 +37,9 @@ SEVERITY LEVELS:
   ERROR   - Error-level issues (exit code 2)
   FATAL   - Fatal issues (exit code 3)
 
-ENVIRONMENT VARIABLES:
-  GOSHI_JSON              - Output JSON format (same as --json flag)
-  GOSHI_MODEL             - LLM model to use (default: ollama)
-  GOSHI_LLM_PROVIDER      - LLM provider (default: auto)
+FLAGS:
+  --format=human  Output format: json, yaml, or human (default: human)
+  --json          (DEPRECATED) Use --format=json instead
 
 EXAMPLES:
 
@@ -46,21 +48,13 @@ EXAMPLES:
      Shows a formatted list of any detected issues with descriptions.
 
   2. Check environment health (JSON output):
-     $ goshi doctor --json
+     $ goshi doctor --format=json
      Returns structured JSON with detected issues for automation.
 
   3. Check and capture results:
      $ goshi doctor > health_report.txt
-     $ goshi doctor --json > health_report.json
-
-OUTPUT FORMAT:
-
-  Human format shows:
-    [severity][code] message (recommended fix strategy)
-
-  JSON format includes:
-    - Issues array with code, severity, message, and strategy
-    - Allows for programmatic parsing and automation
+     $ goshi doctor --format=json > health_report.json
+     $ goshi doctor --format=yaml > health_report.yaml
 
 EXIT CODES:
   0   - Healthy: No issues detected
@@ -81,7 +75,6 @@ SEE ALSO:
 					"jq",
 				},
 			}
-
 			res, err := d.Detect()
 			if err != nil {
 				return err
@@ -94,31 +87,44 @@ SEE ALSO:
 				return err
 			}
 
-			// --- JSON output ---
-			if cfg.JSON {
+			// Output format selection
+			outFmt := format
+			if outFmt == "" && jsonCompat {
+				outFmt = "json"
+			}
+			switch outFmt {
+			case "json":
 				out, err := json.MarshalIndent(diag, "", "  ")
 				if err != nil {
 					return err
 				}
 				fmt.Println(string(out))
 				return nil
-			}
-
-			// --- human output ---
-			if len(diag.Issues) == 0 {
-				fmt.Println("✔ environment looks healthy")
+			case "yaml":
+				data, err := yaml.Marshal(diag)
+				if err != nil {
+					return err
+				}
+				fmt.Print(string(data))
 				return nil
-			}
-
-			fmt.Println("Detected issues:")
-			for _, issue := range diag.Issues {
-				fmt.Printf(
-					" - [%s][%s] %s (suggested: %s)\n",
-					issue.Severity,
-					issue.Code,
-					issue.Message,
-					issue.Strategy,
-				)
+			case "", "human":
+				// --- human output ---
+				if len(diag.Issues) == 0 {
+					fmt.Println("✔ environment looks healthy")
+					return nil
+				}
+				fmt.Println("Detected issues:")
+				for _, issue := range diag.Issues {
+					fmt.Printf(
+						" - [%s][%s] %s (suggested: %s)\n",
+						issue.Severity,
+						issue.Code,
+						issue.Message,
+						issue.Strategy,
+					)
+				}
+			default:
+				return fmt.Errorf("unknown format: %s (use 'json', 'yaml', or 'human')", outFmt)
 			}
 
 			// --- exit code mapping ---
@@ -140,4 +146,8 @@ SEE ALSO:
 			return nil
 		},
 	}
+	// Standardized output format flag
+	cmd.Flags().StringVar(&format, "format", "", "Output format: json, yaml, or human (default: human)")
+	cmd.Flags().BoolVar(&jsonCompat, "json", false, "(DEPRECATED) Output JSON (use --format=json)")
+	return cmd
 }
