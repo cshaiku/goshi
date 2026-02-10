@@ -12,6 +12,7 @@ import (
 	"github.com/cshaiku/goshi/internal/detect"
 	"github.com/cshaiku/goshi/internal/llm"
 	"github.com/cshaiku/goshi/internal/llm/ollama"
+	"github.com/cshaiku/goshi/internal/llm/openai"
 	"github.com/cshaiku/goshi/internal/selfmodel"
 )
 
@@ -62,10 +63,19 @@ func runChat(systemPrompt string) {
 
 	// Initialize LLM backend
 	var backend llm.Backend
+	var err error
+	
 	if cfg.LLMProvider == "ollama" || cfg.LLMProvider == "" || cfg.LLMProvider == "auto" {
 		backend = ollama.New(cfg.Model)
+	} else if cfg.LLMProvider == "openai" {
+		backend, err = openai.New(cfg.Model)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to initialize OpenAI backend: %v\n", err)
+			return
+		}
 	} else {
-		fmt.Fprintf(os.Stderr, "unsupported LLM provider\n")
+		fmt.Fprintf(os.Stderr, "unsupported LLM provider: %s\n", cfg.LLMProvider)
+		fmt.Fprintf(os.Stderr, "supported providers: ollama, openai\n")
 		return
 	}
 

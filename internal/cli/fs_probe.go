@@ -10,6 +10,7 @@ import (
 	"github.com/cshaiku/goshi/internal/experiments"
 	"github.com/cshaiku/goshi/internal/llm"
 	"github.com/cshaiku/goshi/internal/llm/ollama"
+	"github.com/cshaiku/goshi/internal/llm/openai"
 	"github.com/spf13/cobra"
 )
 
@@ -74,10 +75,16 @@ SEE ALSO:
 			ctx := context.Background()
 
 			var backend llm.Backend
+			var err error
 			if cfg.LLMProvider == "" || cfg.LLMProvider == "auto" || cfg.LLMProvider == "ollama" {
 				backend = ollama.New(cfg.Model)
+			} else if cfg.LLMProvider == "openai" {
+				backend, err = openai.New(cfg.Model)
+				if err != nil {
+					return fmt.Errorf("failed to initialize OpenAI backend: %w", err)
+				}
 			} else {
-				return fmt.Errorf("unsupported LLM provider")
+				return fmt.Errorf("unsupported LLM provider: %s", cfg.LLMProvider)
 			}
 
 			sp, err := llm.NewSystemPrompt(runtime.SystemPrompt.Raw())
