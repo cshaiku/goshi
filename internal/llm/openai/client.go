@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/cshaiku/goshi/internal/llm"
 )
@@ -48,9 +49,11 @@ When calling a tool, respond with ONLY a valid JSON object in one of these exact
 
 // Client implements the llm.Backend interface for OpenAI API
 type Client struct {
-	baseURL string
-	apiKey  string
-	model   string
+	baseURL    string
+	apiKey     string
+	model      string
+	enableSSE  bool // Phase 2: Enable streaming via SSE
+	maxRetries int  // Phase 2: Maximum retry attempts
 }
 
 // New creates an OpenAI backend client
@@ -67,14 +70,63 @@ func New(model string) (*Client, error) {
 	}
 
 	return &Client{
-		baseURL: "https://api.openai.com/v1",
-		apiKey:  apiKey,
-		model:   model,
+		baseURL:    "https://api.openai.com/v1",
+		apiKey:     apiKey,
+		model:      model,
+		enableSSE:  true, // Phase 2: Enable streaming
+		maxRetries: 3,    // Phase 2: Default retry limit
 	}, nil
 }
 
 // Stream sends a request to OpenAI and returns a streaming response
+// Phase 2: Supports SSE streaming and retry logic with exponential backoff
 func (c *Client) Stream(
+	ctx context.Context,
+	system string,
+	messages []llm.Message,
+) (llm.Stream, error) {
+	var lastErr error
+
+	// Retry loop with exponential backoff
+	for attempt := 0; attempt <= c.maxRetries; attempt++ {
+		if attempt > 0 {
+			// Calculate backoff for retries
+			backoff := CalculateBackoff(attempt-1, time.Second, 60*time.Second)
+			fmt.Fprintf(os.Stderr, "[OpenAI] Retry attempt %d/%d after %v\n", attempt, c.maxRetries, backoff)
+
+			select {
+			case <-time.After(backoff):
+				// Continue with retry
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		}
+
+		stream, err := c.doStream(ctx, system, messages)
+		if err != nil {
+			lastErr = err
+
+			// Check if error is retryable
+			if apiErr, ok := err.(*APIError); ok {
+				if ShouldRetry(apiErr.StatusCode) && attempt < c.maxRetries {
+					fmt.Fprintf(os.Stderr, "[OpenAI] Retryable error (%d): %s\n", apiErr.StatusCode, apiErr.Message)
+					continue
+				}
+			}
+
+			// Non-retryable error or out of retries
+			return nil, err
+		}
+
+		// Success
+		return stream, nil
+	}
+
+	return nil, fmt.Errorf("OpenAI request failed after %d attempts: %w", c.maxRetries+1, lastErr)
+}
+
+// doStream performs the actual API request
+func (c *Client) doStream(
 	ctx context.Context,
 	system string,
 	messages []llm.Message,
@@ -101,8 +153,8 @@ func (c *Client) Stream(
 	reqBody := map[string]any{
 		"model":       c.model,
 		"messages":    reqMessages,
-		"stream":      false, // Phase 1: Non-streaming only
-		"temperature": 0.0,   // Deterministic tool calls per Goshi design
+		"stream":      c.enableSSE, // Phase 2: Use SSE streaming
+		"temperature": 0.0,         // Deterministic tool calls per Goshi design
 	}
 
 	b, err := json.Marshal(reqBody)
@@ -134,20 +186,15 @@ func (c *Client) Stream(
 	if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
 		body, _ := io.ReadAll(resp.Body)
-
-		switch resp.StatusCode {
-		case http.StatusUnauthorized:
-			return nil, fmt.Errorf("OpenAI API authentication failed (401)\n\nYour API key is invalid or expired.\nPlease check OPENAI_API_KEY environment variable.\n\nGet a new key at: https://platform.openai.com/api-keys")
-		case http.StatusTooManyRequests:
-			return nil, fmt.Errorf("OpenAI API rate limit exceeded (429)\n\nYou've sent too many requests.\nPlease wait a moment and try again.\n\nError details: %s", string(body))
-		case http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable:
-			return nil, fmt.Errorf("OpenAI API server error (%d)\n\nOpenAI's servers are experiencing issues.\nPlease try again in a few moments.\n\nError details: %s", resp.StatusCode, string(body))
-		default:
-			return nil, fmt.Errorf("OpenAI API error (%d): %s", resp.StatusCode, string(body))
-		}
+		return nil, HandleHTTPError(resp, body)
 	}
 
-	// Parse response for non-streaming
+	// Phase 2: Return SSE stream if enabled
+	if c.enableSSE {
+		return newSSEStream(resp.Body), nil
+	}
+
+	// Fallback: Parse non-streaming response
 	var respData struct {
 		Choices []struct {
 			Message struct {
