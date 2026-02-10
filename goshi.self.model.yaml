@@ -9,13 +9,14 @@ meta:
     This file operationalizes and enforces the intent defined in the human context document.
 
 model:
-  model_version: "1.0.0"
+  model_version: "1.0.1"
   change_policy:
     major: "Architectural or intent-breaking changes"
     minor: "Additive or non-breaking intent clarification"
     hotfix: "Emergency correction without intent shift"
   enforcement: "enforced"
-  last_reviewed: "2026-01-27"
+  last_reviewed: "2026-02-10"
+  review_notes: "Added comprehensive test suite (89+ tests) for reliability discovery and safety validation"
 
 application:
   name: "Goshi"
@@ -160,6 +161,11 @@ verification:
   criteria:
     - "dependencies_present"
     - "api_contract_satisfied"
+    - "test_suite_passing"
+  test_verification:
+    on_every_build: true
+    minimum_passing_tests: 89
+    coverage_validation: true
   failure_semantics:
     exit_codes:
       ok: 0
@@ -183,7 +189,24 @@ test_expectations:
   required:
     - "unit_tests"
     - "self_check_tests"
+    - "integration_tests"
   must_pass_before_release: true
+  coverage_targets:
+    config: 51
+    filesystem_safety: 13
+    protocol: 8
+    detection: 7
+    diagnosis: 6
+    execution: 9
+    verification: 8
+    total_minimum: 89
+  reliability_focus:
+    - "Path traversal and symlink safety"
+    - "Configuration validation and bounds checking"
+    - "Environment detection and binary availability"
+    - "Dry-run vs execution modes"
+    - "Error handling and recovery"
+    - "Cross-platform compatibility (macOS path normalization)"
 
 identity:
   binary_name: "goshi"

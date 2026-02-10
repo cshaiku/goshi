@@ -48,14 +48,27 @@ change_intent:
     - "Improving diagnostics and explanations"
     - "Adapting to upstream AI API changes"
     - "Tightening safety boundaries"
+    - "Adding comprehensive test coverage for reliability"
+    - "Improving error handling and edge case detection"
   disallowed:
     - "Expanding scope beyond Goshi itself"
     - "Reducing user visibility or consent"
     - "Making safety rules optional"
+    - "Removing or weakening test requirements"
 
 relationship_to_self_model: >
   This document explains intent in human terms.
   The self-model translates that intent into enforceable rules.
+
+reliability_commitment: >
+  Goshi maintains reliability through comprehensive automated testing.
+  89+ tests across 7 packages validate:
+  - Safety-critical filesystem operations (path traversal, symlinks)
+  - Configuration validation and bounds checking
+  - Environment detection and dependency verification
+  - Execution modes (dry-run vs actual) and error recovery
+  - Cross-platform compatibility
+  All tests must pass before release. Testing is not optional.
 
 filesystem_expectations:
   note: >
