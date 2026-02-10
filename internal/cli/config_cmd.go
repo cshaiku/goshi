@@ -68,7 +68,11 @@ EXAMPLES:
   
   $ goshi config show --format=yaml
 
-  $ goshi config show | jq '.llm.model'`,
+  $ goshi config show | jq '.llm.model'
+
+EXIT CODES:
+  0   - Success
+  1   - Unknown format specified`,
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := GetConfig()
@@ -121,7 +125,11 @@ EXAMPLES:
   ✓ Configuration is valid
 
   $ goshi config validate /etc/goshi/config.yaml
-  Error: invalid temperature: 5 (must be 0-2)`,
+  Error: invalid temperature: 5 (must be 0-2)
+
+EXIT CODES:
+  0   - Configuration is valid
+  1   - Validation failed or file read error`,
 
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -193,7 +201,11 @@ EXAMPLES:
 	✓ Created ~/.goshi/config.yaml
 
 	$ goshi config init --output /etc/goshi/config.yaml --overwrite
-	✓ Created /etc/goshi/config.yaml`,
+	✓ Created /etc/goshi/config.yaml
+
+EXIT CODES:
+  0   - Config file created successfully
+  1   - File already exists or directory creation failed`,
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Determine output path

@@ -75,7 +75,11 @@ EXAMPLES:
     "path": "/absolute/path/src",
     "files": ["main.go", "util/helper.go", "util/test.go"],
     "count": 3
-  }`,
+  }
+
+EXIT CODES:
+  0   - Success: File read or directory list completed
+  1   - Error: File/directory not found or permission denied`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			svc, err := app.NewActionService(".")
@@ -120,6 +124,21 @@ func newFSListCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "list [path]",
 		Short: "List a directory safely",
+		Long: `List directory contents safely within repository bounds.
+
+Lists files and subdirectories for the specified path. By default,
+lists the current directory. Output is JSON for easy parsing.
+
+EXAMPLES:
+  $ goshi fs list
+
+  $ goshi fs list ./src
+
+  $ goshi fs list | jq '.files'
+
+EXIT CODES:
+  0   - Success: Directory listed successfully
+  1   - Error: Directory not found or access denied`,
 		Args:  cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path := "."
@@ -148,6 +167,22 @@ func newFSWriteCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "write <path>",
 		Short: "Propose a write (content read from stdin)",
+		Long: `Propose a file write operation with content from stdin.
+
+Reads content from standard input and creates a reproducible write proposal.
+The proposal includes a hash of the proposed changes and can be applied later
+using 'goshi fs apply'.
+
+EXAMPLES:
+  $ echo "hello" | goshi fs write myfile.txt
+
+  $ cat template.txt | goshi fs write out/generated.txt
+
+  $ goshi fs write config.yaml < new-config.yml
+
+EXIT CODES:
+  0   - Success: Write proposal created
+  1   - Error: No stdin provided or invalid path`,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			b, err := io.ReadAll(os.Stdin)
