@@ -23,6 +23,3 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
-
-# Internal documentation and AI patterns
-docs/
