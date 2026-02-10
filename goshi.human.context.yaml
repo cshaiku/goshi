@@ -38,10 +38,14 @@ human_expectations:
       - "Clear explanations when Goshi cannot operate"
       - "Guided, reviewable repair suggestions"
       - "No filesystem changes without consent"
+      - "Bounded, auditable execution within this repository only"
+      - "Deterministic and reproducible behavior"
     should_not_expect:
       - "Automatic fixes without confirmation"
       - "System-wide changes"
       - "Hidden background behavior"
+      - "Modifications to files outside this repository"
+      - "Execution without proper safety verification"
 
 change_intent:
   allowed:
@@ -69,6 +73,35 @@ reliability_commitment: >
   - Execution modes (dry-run vs actual) and error recovery
   - Cross-platform compatibility
   All tests must pass before release. Testing is not optional.
+
+threat_awareness_and_safety: >
+  Goshi is designed with security boundaries in mind.
+  
+  **What We Protect Against:**
+  - Unintended filesystem modifications outside this repository
+  - Silent behavior changes or scope creep
+  - Execution without proper identity verification
+  - Privilege escalation or unsafe execution contexts
+  
+  **How We Protect:**
+  - Fail-closed semantics: any ambiguity halts execution
+  - Path-level validation: all file operations are strictly bounded
+  - User verification: execution user invariants are enforced
+  - Auditability: all decisions and changes are logged and reversible
+  - Testing: 89+ tests validate safety-critical operations
+  
+  **What Goshi is NOT:**
+  - A sandbox or security isolation mechanism
+  - A tool for operating on arbitrary system environments
+  - An autonomous system that makes decisions without user visibility
+  
+  See `goshi.threat.model.md` for detailed threat analysis and mitigations.
+  
+  Users should always:
+  - Review proposals before applying them
+  - Use dry-run mode by default (it is enabled by default)
+  - Run the `doctor` command to validate safety before major operations
+  - Treat any silent behavior as a bug to report
 
 filesystem_expectations:
   note: >

@@ -272,3 +272,61 @@ filesystem_truth_rule:
     - Do not speculate or provide examples
     - Return refusal_behavior.message verbatim
 
+fail_closed_semantics:
+  philosophy: "Fail closed: ambiguity and invariant violations halt execution"
+  principles:
+    - "Any ambiguity halts execution"
+    - "Any invariant violation is unsafe"
+    - "No partial success states allowed"
+    - "No override flags for invariant violations in early versions"
+    - "Execution boundary violations are fatal"
+  exit_behaviors:
+    ok: "0 - Operation succeeded with expected state"
+    warn: "1 - Operation completed but with warnings or unexpected state"
+    error: "2 - Operation failed, diagnostics available"
+    fatal: "3 - Invariant violation, execution halted immediately"
+
+threat_model_architecture:
+  design_reference: "goshi.threat.model.md"
+  note: "All threats below are designed to be mitigated by code-level enforcement"
+  mitigations:
+    - threat: "T1: Scope Escalation"
+      description: "Modification of files outside goshi repository"
+      enforcement_location: "internal/fs/guard.go"
+      mechanism: "Path allow-listing, symlink resolution, absolute path validation"
+      
+    - threat: "T2: Identity Confusion"
+      description: "Renamed or copied binaries acting as goshi"
+      enforcement_location: "internal/diagnostics/safety/binary_name.go"
+      mechanism: "Binary name invariant, repo root marker check"
+      
+    - threat: "T3: Unsafe Self-Healing"
+      description: "Healing runs in ambiguous or unsafe state"
+      enforcement_location: "internal/diagnostics/safety/runner.go"
+      mechanism: "Safety invariants checked before healing, clean git requirement"
+      
+    - threat: "T4: Privilege Abuse"
+      description: "Execution with elevated or unexpected privileges"
+      enforcement_location: "internal/diagnostics/safety/user.go"
+      mechanism: "Execution user invariant enforcement, root disallowed by default"
+      
+    - threat: "T5: Behavior Drift"
+      description: "Silent behavior changes without user visibility"
+      enforcement_location: "cmd/root.go"
+      mechanism: "Verdict-first output, deterministic exit codes, output parity"
+
+critical_violations_checklist:
+  note: "Any of the following violations would collapse the bounded autonomy model and are FORBIDDEN"
+  violations:
+    - "Allowing filesystem writes outside the repo root"
+    - "Introducing multiple filesystem write paths"
+    - "Making safety invariants optional or suppressible"
+    - "Adding override flags for invariant violations"
+    - "Allowing healing with a dirty git working tree"
+    - "Executing without verifying binary identity"
+    - "Performing network operations without explicit scope"
+    - "Silent behavior changes without diagnostics output"
+    - "Allowing privilege escalation or root execution by default"
+  enforcement: "mandatory"
+  review_required: "All PRs must explicitly confirm zero violations in this checklist"
+
