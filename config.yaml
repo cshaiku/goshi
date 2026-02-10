@@ -1,0 +1,66 @@
+# Goshi Configuration
+# Local-first protective CLI agent configuration
+
+# LLM Configuration
+llm:
+  # Model to use - depends on provider
+  # For Ollama: "mistral", "llama2", "neural-chat", etc.
+  # For OpenAI: "gpt-4", "gpt-3.5-turbo", etc.
+  model: "mistral"
+  
+  # LLM Provider backend
+  # Options: "ollama", "openai", "auto" (auto-detect)
+  provider: "ollama"
+  
+  # Temperature for model responses (0-2)
+  # Lower = more deterministic (better for tool calling)
+  # Higher = more creative/varied
+  temperature: 0
+  
+  # Maximum tokens in model responses
+  max_tokens: 4096
+  
+  # Request timeout in seconds
+  request_timeout: 60
+
+  # Local Model Configuration (for Ollama or other local providers)
+  local:
+    # URL for local LLM server
+    # Example: "http://localhost:11434" for Ollama
+    url: "http://localhost:11434"
+    
+    # Port for local LLM server
+    # Ollama default: 11434
+    # LM Studio default: 1234
+    port: 11434
+
+# Safety & Permissions
+safety:
+  # Run in dry-run mode by default (simulate changes, don't execute)
+  dry_run_by_default: true
+  
+  # Automatically confirm permission prompts (non-interactive mode)
+  auto_confirm_permissions: false
+  
+  # Auto-backup files before modifying them
+  auto_backup_on_write: true
+
+# Logging & Output
+logging:
+  # Log verbosity level
+  # Options: "debug", "info", "warn", "error"
+  level: "info"
+  
+  # Default output format
+  # Options: "json", "human", "verbose"
+  output_format: "json"
+
+# Behavior
+behavior:
+  # Repository root to scope all operations
+  # If empty, uses current working directory
+  repo_root: ""
+  
+  # Cache directory for proposals and temporary files
+  # If empty, uses system temp directory
+  cache_dir: ""
