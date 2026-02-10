@@ -8,14 +8,14 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/cshaiku/goshi/internal/cli"
 	"github.com/cshaiku/goshi/internal/selfmodel"
+	"github.com/cshaiku/goshi/internal/session"
 )
 
 // Run starts the TUI application
-func Run(systemPrompt string, session *cli.ChatSession) error {
+func Run(systemPrompt string, sess *session.ChatSession) error {
 	p := tea.NewProgram(
-		newModel(systemPrompt, session),
+		newModel(systemPrompt, sess),
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
 	)
@@ -44,11 +44,11 @@ type model struct {
 	err        error
 
 	// Integration
-	session      *cli.ChatSession
+	chatSession  *session.ChatSession
 	systemPrompt string
 }
 
-func newModel(systemPrompt string, session *cli.ChatSession) model {
+func newModel(systemPrompt string, sess *session.ChatSession) model {
 	ta := textarea.New()
 	ta.Placeholder = "Type your message..."
 	ta.Focus()
@@ -64,7 +64,7 @@ func newModel(systemPrompt string, session *cli.ChatSession) model {
 		viewport:     vp,
 		textarea:     ta,
 		messages:     []Message{},
-		session:      session,
+		chatSession:  sess,
 		systemPrompt: systemPrompt,
 		statusLine:   "Ready",
 	}
@@ -195,8 +195,8 @@ func (m model) renderHeader() string {
 	metrics := selfmodel.ComputeLawMetrics(m.systemPrompt)
 	status := "STAGED"
 
-	if m.session != nil && m.session.Permissions != nil {
-		perms := m.session.Permissions
+	if m.chatSession != nil && m.chatSession.Permissions != nil {
+		perms := m.chatSession.Permissions
 		if perms.FSRead && perms.FSWrite {
 			status = "ACTIVE (FS_READ + FS_WRITE)"
 		} else if perms.FSRead {

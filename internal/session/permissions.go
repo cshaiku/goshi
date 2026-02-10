@@ -1,10 +1,11 @@
-package cli
+package session
 
 import (
 	"fmt"
 	"os"
 	"time"
 
+	"github.com/cshaiku/goshi/internal/config"
 	"github.com/manifoldco/promptui"
 )
 
@@ -108,7 +109,7 @@ func (p *Permissions) GetAuditTrail() string {
 }
 
 func RequestFSReadPermission(cwd string) bool {
-	cfg := GetConfig()
+	cfg := config.Load()
 	if cfg.Safety.AutoConfirmPermissions {
 		return true
 	}
@@ -143,7 +144,7 @@ func RequestFSReadPermission(cwd string) bool {
 }
 
 func RequestFSWritePermission(cwd string) bool {
-	cfg := GetConfig()
+	cfg := config.Load()
 	if cfg.Safety.AutoConfirmPermissions {
 		return true
 	}

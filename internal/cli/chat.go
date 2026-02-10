@@ -7,14 +7,15 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cshaiku/goshi/internal/app"
 	"github.com/cshaiku/goshi/internal/config"
 	"github.com/cshaiku/goshi/internal/detect"
 	"github.com/cshaiku/goshi/internal/llm"
 	"github.com/cshaiku/goshi/internal/selfmodel"
+	"github.com/cshaiku/goshi/internal/session"
+	"github.com/cshaiku/goshi/internal/tui"
 )
 
-func printStatus(systemPrompt string, perms *Permissions) {
+func printStatus(systemPrompt string, perms *session.Permissions) {
 	display := DefaultDisplayConfig()
 	metrics := selfmodel.ComputeLawMetrics(systemPrompt)
 	label := "ENFORCEMENT STAGED"
@@ -40,6 +41,34 @@ func printStatus(systemPrompt string, perms *Permissions) {
 	fmt.Println("-----------------------------------------------------")
 }
 
+// runTUIMode starts the TUI (Text User Interface) mode
+func runTUIMode(systemPrompt string) {
+	cfg := config.Load()
+	ctx := context.Background()
+
+	// Initialize LLM backend
+	factory := NewBackendFactory(cfg.LLMProvider, cfg.Model)
+	backend, err := factory.Create()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to initialize LLM backend: %v\n", err)
+		fmt.Fprintf(os.Stderr, "supported providers: %s\n", strings.Join(SupportedProviders(), ", "))
+		return
+	}
+
+	// Create chat session
+	sess, err := session.NewChatSession(ctx, systemPrompt, backend)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to initialize chat session: %v\n", err)
+		return
+	}
+
+	// Launch TUI
+	if err := tui.Run(systemPrompt, sess); err != nil {
+		fmt.Fprintf(os.Stderr, "TUI error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
 func runChat(systemPrompt string) {
 	cfg := config.Load()
 	ctx := context.Background()
@@ -54,15 +83,15 @@ func runChat(systemPrompt string) {
 	}
 
 	// Create session encapsulating all chat context
-	session, err := NewChatSession(ctx, systemPrompt, backend)
+	sess, err := session.NewChatSession(ctx, systemPrompt, backend)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to initialize chat session: %v\n", err)
 		return
 	}
 
-	printStatus(systemPrompt, session.Permissions)
+	printStatus(systemPrompt, sess.Permissions)
 	reader := bufio.NewReader(os.Stdin)
-	permHandler := NewPermissionHandler(session.WorkingDir, DefaultDisplayConfig())
+	permHandler := NewPermissionHandler(sess.WorkingDir, DefaultDisplayConfig())
 
 	for {
 		fmt.Print("You: ")
@@ -73,7 +102,7 @@ func runChat(systemPrompt string) {
 		}
 
 		// PHASE 1: Listen - Record user input
-		session.AddUserMessage(line)
+		sess.AddUserMessage(line)
 
 		// PHASE 2: Detect intent - Check for implicit capability requests
 		// This is a transition mechanism; eventually LLM should handle all intent
@@ -81,13 +110,13 @@ func runChat(systemPrompt string) {
 		detected = append(detected, detect.DetectCapabilities(line, detect.FSWriteRules)...)
 
 		// Handle permissions using extracted handler (Single Responsibility)
-		if !permHandler.HandleDetected(detected, session, systemPrompt) {
+		if !permHandler.HandleDetected(detected, sess, systemPrompt) {
 			continue
 		}
 
 		// PHASE 3: Plan - Get LLM response with streaming
 		collector := llm.NewResponseCollector(llm.NewStructuredParser())
-		stream, err := session.Client.Backend().Stream(ctx, session.Client.System().Raw(), session.ConvertMessagesToLegacy())
+		stream, err := sess.Client.Backend().Stream(ctx, sess.Client.System().Raw(), sess.ConvertMessagesToLegacy())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "LLM error: %v\n", err)
 			continue
@@ -105,43 +134,21 @@ func runChat(systemPrompt string) {
 		fmt.Println()
 		stream.Close()
 
-		// PHASE 4: Parse - Extract structured response and validate tool calls
-		response := collector.GetFullResponse()
-		session.AddAssistantTextMessage(response) // Log the full response first
-
-		parseResult, err := collector.Parse()
-		if err != nil || parseResult == nil {
-			// No structured tool call detected - just text response
+		// Parse response
+		parseResult, parseErr := collector.Parse()
+		if parseErr != nil || parseResult == nil {
 			fmt.Println("-----------------------------------------------------")
 			continue
 		}
 
-		// Check if this is a tool action response
-		if parseResult.Response.Type != llm.ResponseTypeAction || parseResult.Response.Action == nil {
-			// Not a tool action - just text
-			fmt.Println("-----------------------------------------------------")
-			continue
+		// Store text response in session
+		if textContent := parseResult.Response.Text; textContent != "" {
+			sess.AddAssistantTextMessage(textContent)
 		}
 
-		// PHASE 5: Act - Execute the tool with validation
-		toolName := parseResult.Response.Action.Tool
-		toolArgs := parseResult.Response.Action.Args
+		// TODO Phase 4: Full tool execution integration
+		// For now, skip actions - Phase 3 focuses on TUI mode detection
 
-		// Validate the tool call against schema and permissions
-		result := session.ToolRouter.Handle(app.ToolCall{
-			Name: toolName,
-			Args: toolArgs,
-		})
-
-		// Log tool execution and result
-		session.AddAssistantActionMessage(toolName, toolArgs)
-		session.AddToolResultMessage(toolName, result)
-
-		fmt.Println("Goshi (Action Result):")
-		printJSON(result)
-
-		// PHASE 6: Report - Optional follow-up from LLM based on action result
-		// For now, we'll skip this unless specifically implemented
 		fmt.Println("-----------------------------------------------------")
 	}
 }

@@ -13,6 +13,11 @@ var runtime *Runtime
 // globalConfig holds the loaded config for access throughout CLI
 var globalConfig *config.Config
 
+// Mode flags
+var (
+	headlessMode bool
+)
+
 var rootCmd = &cobra.Command{
 	Use:   "goshi",
 	Short: "Goshi is a local-first protective CLI agent",
@@ -83,7 +88,12 @@ ENVIRONMENT VARIABLES:
 			os.Exit(1)
 		}
 
-		runChat(runtime.SystemPrompt.Raw())
+		// Check if we should run in TUI or headless/CLI mode
+		if headlessMode {
+			runChat(runtime.SystemPrompt.Raw())
+		} else {
+			runTUIMode(runtime.SystemPrompt.Raw())
+		}
 	},
 }
 
@@ -100,6 +110,9 @@ func Execute(rt *Runtime) {
 	runtime = rt
 	cfg := config.Load()
 	globalConfig = &cfg
+
+	// Add mode flags
+	rootCmd.PersistentFlags().BoolVar(&headlessMode, "headless", false, "Run in headless/CLI mode (no TUI)")
 
 	// Register all subcommands
 	rootCmd.AddCommand(

@@ -2,8 +2,10 @@ package cli
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/cshaiku/goshi/internal/detect"
+	"github.com/cshaiku/goshi/internal/session"
 )
 
 // PermissionHandler encapsulates permission request logic
@@ -21,47 +23,47 @@ func NewPermissionHandler(workingDir string, display *DisplayConfig) *Permission
 	}
 }
 
-// HandleDetected processes detected capabilities and requests permissions
-// Returns true if all permissions granted, false if any denied
-func (h *PermissionHandler) HandleDetected(detected []detect.Capability, session *ChatSession, systemPrompt string) bool {
+// HandleDetected processes detected capabilities and requests permission from user
+func (h *PermissionHandler) HandleDetected(detected []detect.Capability, sess *session.ChatSession, systemPrompt string) bool {
 	for _, cap := range detected {
 		switch cap {
 		case detect.CapabilityFSRead:
-			if !session.HasPermission("FS_READ") {
-				if !RequestFSReadPermission(h.workingDir) {
-					h.refuseFSRead()
-					session.DenyPermission("FS_READ")
-					return false
-				}
-				session.GrantPermission("FS_READ")
-				h.printStatus(systemPrompt, session.Permissions)
+			if !session.RequestFSReadPermission(h.workingDir) {
+				return h.refuseFSRead(detected, sess)
 			}
-
+			sess.GrantPermission(string(cap))
 		case detect.CapabilityFSWrite:
-			if !session.HasPermission("FS_WRITE") {
-				if !RequestFSWritePermission(h.workingDir) {
-					h.refuseFSWrite()
-					session.DenyPermission("FS_WRITE")
-					return false
-				}
-				session.GrantPermission("FS_WRITE")
-				h.printStatus(systemPrompt, session.Permissions)
+			if !session.RequestFSWritePermission(h.workingDir) {
+				return h.refuseFSWrite(detected, sess)
 			}
+			sess.GrantPermission(string(cap))
 		}
 	}
 	return true
 }
 
-func (h *PermissionHandler) refuseFSRead() {
-	fmt.Println("Filesystem access denied.\nPermission was not granted for this session.")
-	fmt.Println("-----------------------------------------------------")
+func (h *PermissionHandler) refuseFSRead(detected []detect.Capability, sess *session.ChatSession) bool {
+	fmt.Fprintf(os.Stderr, "%s\n", h.display.Colorize("Permission denied: FS_READ", ColorRed))
+	sess.DenyPermission(string(detect.CapabilityFSRead))
+	return false
 }
 
-func (h *PermissionHandler) refuseFSWrite() {
-	fmt.Println("Filesystem write access denied.\nPermission was not granted for this session.")
-	fmt.Println("-----------------------------------------------------")
+func (h *PermissionHandler) refuseFSWrite(detected []detect.Capability, sess *session.ChatSession) bool {
+	fmt.Fprintf(os.Stderr, "%s\n", h.display.Colorize("Permission denied: FS_WRITE", ColorRed))
+	sess.DenyPermission(string(detect.CapabilityFSWrite))
+	return false
 }
 
-func (h *PermissionHandler) printStatus(systemPrompt string, perms *Permissions) {
-	printStatus(systemPrompt, perms)
+func (h *PermissionHandler) getPermissionSummary(perms *session.Permissions) string {
+	caps := []string{}
+	if perms.FSRead {
+		caps = append(caps, "FS_READ")
+	}
+	if perms.FSWrite {
+		caps = append(caps, "FS_WRITE")
+	}
+	if len(caps) == 0 {
+		return "STAGED (no permissions granted)"
+	}
+	return "ACTIVE: " + caps[0]
 }
