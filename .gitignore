@@ -1,11 +1,12 @@
 # Go build artifacts
 *.exe
+*.txt
 *.test
 *.out
 goshi
 /bin/
 /reports/
-/development_temp/
+/.development_temp/
 
 
 # Editor / OS
