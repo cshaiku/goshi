@@ -4,6 +4,28 @@ All notable changes to goshi are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Added - Text User Interface (TUI) (Feb 10, 2026)
+
+#### Complete Interactive Terminal Interface
+- **Bubble Tea Framework** — Modern TUI built with Bubble Tea v1.3.10, Lipgloss v1.1.0, Bubbles v1.0.0
+- **Real-time LLM Streaming** — Async streaming with progressive message display and streaming cursor (▊)
+- **Tool Execution** — Full tool execution with visual feedback (✓ success, ✗ failure indicators)
+- **Scrollable Chat History** — Viewport component with keyboard navigation (↑/↓ arrows)
+- **User Input** — Textarea component with Ctrl+S to send, Ctrl+C/Esc to quit
+- **Message Styling** — Color-coded messages (orange user, green assistant) with Lipgloss
+- **Status Display** — Header with law metrics, constraints, and enforcement status
+- **Performance Optimization** — 100 message viewport limit to prevent memory issues
+- **Enhanced Error Handling** — Truncated error messages, nil-safe operations, user-friendly feedback
+- **Comprehensive Testing** — 9 unit tests covering initialization, streaming, tool execution, error handling
+- **Mode Detection** — `--headless` flag for CLI/script mode (TUI is default)
+- **Session Management** — New `internal/session` package for shared state (broke cli/tui import cycles)
+- **Complete Documentation** — 6.8KB guide in `.goshi/ai-related/TUI_USAGE.md` with architecture, keyboard shortcuts, troubleshooting
+
+#### Default Mode Change (Breaking)
+- **TUI Mode** — Running `goshi` without arguments now launches interactive TUI (previously CLI)
+- **CLI/Script Mode** — Use `goshi --headless` for traditional command-line mode
+- **Updated Help Text** — Documentation now clearly distinguishes between TUI and headless modes
+
 ## [1.0.0] - 2026-02-10
 
 ### Added - OpenAI Backend Integration (Feb 10, 2026)
