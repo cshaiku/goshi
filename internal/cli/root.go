@@ -65,9 +65,20 @@ For specific topics:
   $ goshi help doctor   - Environment diagnostics
   $ goshi help heal     - Automatic repairs
 
-INTERACTIVE MODE:
-Run goshi without arguments to start an interactive chat with the AI agent:
-  $ goshi
+INTERACTIVE MODES:
+
+  TUI Mode (default):
+    Run goshi without arguments to start the Text User Interface:
+      $ goshi
+    
+    Interactive chat with visual interface, message history scrolling,
+    and keyboard shortcuts (Ctrl+S to send, Ctrl+C to quit).
+
+  Headless/CLI Mode:
+    For scripts and automation, use the --headless flag:
+      $ goshi --headless
+    
+    Traditional command-line interface suitable for piping and automation.
 
 ENVIRONMENT VARIABLES:
   GOSHI_CONFIG        - Path to configuration file (overrides file search)
