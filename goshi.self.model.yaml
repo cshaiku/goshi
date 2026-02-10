@@ -94,6 +94,12 @@ external_contracts:
     execution_model:
       locality: "local_preferred"
       offline_capable: true
+      default_model: "qwen3:8b-q8_0"
+      required_models:
+        - name: "qwen3:8b-q8_0"
+          provider: "ollama"
+          required: true
+          fallback: none
 
     authentication:
       type: "none"

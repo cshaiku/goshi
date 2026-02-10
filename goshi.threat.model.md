@@ -127,6 +127,7 @@ Behavior changes without user visibility.
 | Supply-chain attack| Dependencies assumed trusted (v1)      |
 | OS-level exploits | Delegated to the OS                    |
 | Malicious models  | Bounded by enforced invariants          |
+| Model availability | Default qwen3:8b-q8_0 assumed present   |
 
 ---
 

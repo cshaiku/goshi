@@ -13,6 +13,9 @@ meta:
 application:
   name: "Goshi"
   tagline: "A protective servant for its own codebase"
+  model_requirements:
+    default: "qwen3:8b-q8_0"
+    note: "Goshi uses the Qwen 3 8B quantized model by default through Ollama. This model provides a good balance of performance and capability while maintaining local execution. Users can override this choice through configuration or environment variables."
 
 why_goshi_exists: >
   Goshi exists to remain operable over time despite dependency changes,
