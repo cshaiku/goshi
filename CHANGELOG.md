@@ -4,7 +4,16 @@ All notable changes to goshi are documented in this file. The format is based on
 
 ## [Unreleased]
 
-### Added - Text User Interface (TUI) (Feb 10, 2026)
+### Planned
+- Enhanced LLM backend selection and fallback logic
+- Extended tool registry with custom tool registration
+- Multi-session conversation management
+
+---
+
+## [1.1.0] - 2026-02-10
+
+### Added - Text User Interface (TUI)
 
 #### Complete Interactive Terminal Interface
 - **Bubble Tea Framework** — Modern TUI built with Bubble Tea v1.3.10, Lipgloss v1.1.0, Bubbles v1.0.0
@@ -16,19 +25,35 @@ All notable changes to goshi are documented in this file. The format is based on
 - **Status Display** — Header with law metrics, constraints, and enforcement status
 - **Performance Optimization** — 100 message viewport limit to prevent memory issues
 - **Enhanced Error Handling** — Truncated error messages, nil-safe operations, user-friendly feedback
-- **Comprehensive Testing** — 9 unit tests covering initialization, streaming, tool execution, error handling
+- **Comprehensive Testing** — 14 unit tests covering initialization, streaming, tool execution, error handling
 - **Mode Detection** — `--headless` flag for CLI/script mode (TUI is default)
 - **Session Management** — New `internal/session` package for shared state (broke cli/tui import cycles)
-- **Complete Documentation** — 6.8KB guide in `.goshi/ai-related/TUI_USAGE.md` with architecture, keyboard shortcuts, troubleshooting
+- **Complete Documentation** — 312-line guide in `.goshi/ai-related/TUI_USAGE.md` with architecture, keyboard shortcuts, troubleshooting
 
 #### Default Mode Change (Breaking)
 - **TUI Mode** — Running `goshi` without arguments now launches interactive TUI (previously CLI)
 - **CLI/Script Mode** — Use `goshi --headless` for traditional command-line mode
 - **Updated Help Text** — Documentation now clearly distinguishes between TUI and headless modes
 
+### Changed - Documentation
+- **README.md** — Added Interactive Modes section documenting TUI and headless modes with keyboard controls
+- **Test Count** — Updated from 165+ to 230+ tests (verified accurate count)
+
+### Fixed - Test Infrastructure
+- **metrics_test.go** — Recreated corrupted test file with proper structure
+- **session package** — Exported MockStream types for test reuse across packages
+- **cli integration tests** — Updated imports to use session.NewChatSession
+
+### Metadata
+- **Build Status** — ✅ All passing
+- **Test Coverage** — 230+ tests across 16+ packages
+- **TUI Framework** — Bubble Tea (Elm Architecture pattern)
+
+---
+
 ## [1.0.0] - 2026-02-10
 
-### Added - OpenAI Backend Integration (Feb 10, 2026)
+### Added - OpenAI Backend Integration
 
 #### Phase 1: MVP OpenAI Backend Support
 - **OpenAI API Client** — Full OpenAI chat completions API integration with streaming support
@@ -57,9 +82,9 @@ All notable changes to goshi are documented in this file. The format is based on
 - **SSE Streaming Tests** (14 tests) — Chunk parsing, usage data extraction, finish reasons, malformed JSON handling
 - **Tool Conversion Tests** (20 tests) — OpenAI format conversion, schema validation, complex nested structures
 
-### Added - LLM Integration Refactoring (Feb 10, 2026)
+### Added - LLM Integration Refactoring
 
-#### Phase 1-3: Core LLM Architecture (Feb 10)
+#### Phase 1-3: Core LLM Architecture
 - **Structured Message Types** — Type-safe message protocol with `UserMessage`, `AssistantTextMessage`, `AssistantActionMessage`, `ToolResultMessage`, and `SystemPrompt` types
 - **Tool Registry** — Dynamic tool discovery with JSON Schema validation, auto-populated from action dispatcher
 - **Permission Model** — Fine-grained capability-based access control with `FS_READ` and `FS_WRITE` capabilities
@@ -68,17 +93,15 @@ All notable changes to goshi are documented in this file. The format is based on
 - **6-Phase Chat Flow** — Deterministic execution pipeline (Listen → Detect → Plan → Parse → Act → Report)
 - **Ollama Backend** — Tool instruction generation and structured output parsing
 
-#### Phase 4: Integration Testing (Feb 10)
+#### Phase 4: Integration Testing
 - **18 Comprehensive Integration Tests** covering all critical chat and tool execution paths
 - **MockLLMBackend** — Deterministic testing infrastructure for scripted responses
 - **End-to-End Validation** — Full 6-phase flow testing with permission enforcement, schema validation, and audit trail verification
 - Test coverage across tool execution, permission denial scenarios, schema validation, structured response parsing, and message history
 
-- **OpenAI Backend Tests** (68 tests) — Cost tracking, circuit breaker, error handling, SSE streaming, tool conversion
+**Total: 165+ tests (100% passing)**
 
-**Total: 233+ tests (100% passing)**
-
-### Changed - Code Quality Improvements (Feb 10, 2026)
+### Changed - Code Quality Improvements
 
 #### SOLID Principles Refactoring
 - **Dependency Inversion Principle (DIP)** — Extracted `BackendFactory` to decouple CLI from concrete LLM implementations (ollama, openai)
@@ -93,25 +116,28 @@ All notable changes to goshi are documented in this file. The format is based on
 - **`internal/cli/permission_handler.go`** — Permission request logic encapsulation (66 lines)
 
 #### Bug Fixes
-- **Duplicate Package Declarations** — Fixed syntax errors in `internal/repair/basic_test.go` and `internal/selfmodel/metrics_test.go`LM Integration Architecture section with tool registry, permission model, and chat session documentation
+- **Duplicate Package Declarations** — Fixed syntax errors in `internal/repair/basic_test.go` and `internal/selfmodel/metrics_test.go`
+
+### Changed - Documentation
+- **README.md** — Updated with LLM Integration Architecture section with tool registry, permission model, and chat session documentation
 - **MIGRATION.md** — Comprehensive upgrade guide with step-by-step migration instructions, breaking changes, and troubleshooting
 - **LLM_INTEGRATION.md** — Quick reference guide with code examples, tool documentation, and usage patterns
 - **Internal Phase Documentation** — Detailed completion summary of all 5 LLM integration phases (internal tracking, see docs/ai-patterns/project-phases/)
 
-### Added - CLI Enhancements (Feb 10, 2026)
+### Added - CLI Enhancements
 
-#### Command Structure & Help (Feb 10)
+#### Command Structure & Help
 - **fs probe → fs probe subcommand** — Standardized command structure for consistency
 - **Comprehensive Exit Codes** — Full EXIT CODES documentation across all CLI commands
 - **Standardized Environment Variables** — Consistent ENVIRONMENT documentation across all commands (with doctor command additions)
 - **Long Description** — Comprehensive long description for root goshi command 
 - **Help Text Improvements** — Streamlined fs and config command help for clarity
 
-#### Output Format Standardization (Feb 10)
+#### Output Format Standardization
 - **--format Flag** — Unified `--format (json|yaml|human)` flag for doctor and heal commands
 - **JSON Output Deprecation** — Deprecated `--json` flag in favor of unified `--format` approach
 
-### Added - Core Testing Infrastructure (Feb 10, 2026)
+### Added - Core Testing Infrastructure
 
 - **Config Package Tests** (51 tests) — Configuration validation, environment handling, parameter bounds
 - **Filesystem Safety Tests** (13 tests) — Path traversal protection, symlink handling, guard mechanisms
@@ -124,13 +150,13 @@ All notable changes to goshi are documented in this file. The format is based on
 
 **Total: 165+ tests (100% passing)**
 
-### Added - Project Management (Feb 10, 2026)
+### Added - Project Management
 
 - **Action Plans** — CLI UX improvement and project management action plans in `.goshi/action-plans`
 - **Documentation Strategy** — Integrated threat model into self-model and human context
 - **Test Coverage Commitments** — Updated self-model and human context with comprehensive testing commitments
 
-### Changed - Documentation (Feb 10, 2026)
+### Changed - Documentation
 
 - **README.md** — Updated execution pipeline documentation and test coverage information
 - **Threat Model Integration** — Incorporated threat model into self-model and human context strategy
@@ -139,7 +165,7 @@ All notable changes to goshi are documented in this file. The format is based on
 ### Metadata
 
 - **Build Status** — ✅ All passing
-- **Test Coverage** — 233+ tests across 15+ packages
+- **Test Coverage** — 165+ tests across 15+ packages
 - **LLM Backends** — Ollama (local), OpenAI (cloud)
 - **Deployment Ready** — Yes
 - **Breaking Changes** — Documented in MIGRATION.md
