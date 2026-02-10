@@ -62,6 +62,13 @@ EXIT CODES:
   2   - Error: Critical issues found
   3   - Fatal: System-level problems detected
 
+ENVIRONMENT:
+  GOSHI_CONFIG        - Path to configuration file to load
+  GOSHI_MODEL         - LLM model to use (default: ollama)
+  GOSHI_LLM_PROVIDER  - LLM provider: ollama, openai, etc. (default: auto)
+  GOSHI_OLLAMA_URL    - Ollama server URL
+  GOSHI_OLLAMA_PORT   - Ollama server port number
+
 SEE ALSO:
   goshi heal              - Automatically repair detected issues
   goshi help              - Show general help information`,
