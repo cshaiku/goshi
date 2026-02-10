@@ -1,0 +1,28 @@
+# Dependencies
+vendor/
+node_modules/
+
+# Build outputs
+dist/
+build/
+*.o
+*.a
+*.so
+
+# Test coverage
+*.out
+coverage/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Internal documentation and AI patterns
+docs/
