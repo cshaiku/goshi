@@ -218,11 +218,11 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.Logging.Level != "" &&
-		c.Logging.Level != "debug" &&
-		c.Logging.Level != "info" &&
-		c.Logging.Level != "warn" &&
-		c.Logging.Level != "error" {
+	if c.Logging.Level == "" ||
+		(c.Logging.Level != "debug" &&
+			c.Logging.Level != "info" &&
+			c.Logging.Level != "warn" &&
+			c.Logging.Level != "error") {
 		return fmt.Errorf("logging.level must be debug, info, warn, or error, got %s", c.Logging.Level)
 	}
 
