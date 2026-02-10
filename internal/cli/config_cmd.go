@@ -17,38 +17,26 @@ func newConfigCommand() *cobra.Command {
 		Short: "Manage goshi configuration",
 		Long: `Manage and inspect goshi configuration.
 
-The config system searches for configuration files in this order:
-  1. $GOSHI_CONFIG environment variable (if set)
-  2. .goshi.yaml in current directory
-  3. ~/.goshi/config.yaml in home directory
-  4. /etc/goshi/config.yaml system-wide
-  5. Compiled-in defaults (always available)
+Config files are searched in this order:
+  1. $GOSHI_CONFIG environment variable
+  2. .goshi.yaml (current directory)
+  3. ~/.goshi/config.yaml (home directory)
+  4. /etc/goshi/config.yaml (system-wide)
+  5. Built-in defaults
 
-Environment variables can override config file settings:
-  - GOSHI_MODEL - Override LLM model
-  - GOSHI_LLM_PROVIDER - Override LLM provider (ollama, openai)
-  - GOSHI_OLLAMA_URL - Override local Ollama server URL
-  - GOSHI_OLLAMA_PORT - Override local Ollama server port
+Environment variables override config files:
+  GOSHI_MODEL, GOSHI_LLM_PROVIDER, GOSHI_OLLAMA_URL, GOSHI_OLLAMA_PORT
 
-EXAMPLES:
-
-  1. Show currently loaded configuration:
-     $ goshi config show
-
-  2. Validate a config file:
-     $ goshi config validate
-     $ goshi config validate path/to/config.yaml
-
-  3. Generate a default config template:
-     $ goshi config init
-
-  4. Check a specific setting:
-     $ goshi config show | jq '.llm.model'
+QUICK START:
+  $ goshi config show              # Display current config
+  $ goshi config show --format=yaml  # Show as YAML
+  $ goshi config validate          # Validate current config
+  $ goshi config init --output ~/.goshi/config.yaml  # Generate template
 
 SEE ALSO:
-  goshi help config show      - Show loaded configuration
+  goshi help config show      - Display configuration
   goshi help config validate  - Validate configuration file
-  goshi help config init      - Generate default config`,
+  goshi help config init      - Generate config template`,
 	}
 
 	cmd.AddCommand(
