@@ -1,6 +1,4 @@
-# WORK IN PROGRESS #
-
-# goshi
+# goshi: Self-Aware AI-Assisted CLI Tool
 
 **goshi** is a Go-based CLI tool and the self-hosted, self-aware successor to grok-cli.
 
@@ -55,6 +53,126 @@ All actions are gated by diagnostics phases, executed in order:
 3. Environment checks
 
 If any phase fails, execution halts.
+
+---
+
+## LLM Integration Architecture
+
+goshi integrates LLMs as tool-calling assistants with strict permission boundaries and comprehensive audit trails. The integration is designed to be deterministic, inspectable, and reversible.
+
+### Core Components
+
+**Structured Message Types** — Type-safe message protocol between CLI and LLM:
+- `UserMessage`: User input to the chat
+- `AssistantTextMessage`: LLM text response
+- `AssistantActionMessage`: LLM tool call request
+- `ToolResultMessage`: Result from executing a tool
+- `SystemPrompt`: System instructions for the LLM
+
+All messages are converted to a unified JSON schema for transmission and persistence.
+
+**Tool Registry** — Dynamic discovery and validation of available tools:
+- Each tool has a unique identifier (e.g., `fs.read`, `fs.write`, `fs.list`)
+- Tools include JSON Schema for argument validation
+- Registry is built from the action dispatcher
+- Tools are discoverable and help can be generated automatically
+
+**Permission Model** — Fine-grained capability-based access control:
+- Tools are gated behind explicit capabilities (`FS_READ`, `FS_WRITE`)
+- Permissions are granted interactively during chat
+- All permission decisions are logged with timestamps
+- Denied permission attempts are recorded in the audit trail
+- Capabilities persist for the duration of a chat session
+
+**Audit Trail** — Complete record of all security-relevant events:
+- Permission grants and denials
+- Tool execution requests (granted and denied)
+- Schema validation failures
+- Timestamps and working directory context
+- Retrievable in human-readable format via `session.GetAuditLog()`
+
+### 6-Phase Chat Flow
+
+The chat loop implements a strict execution pipeline:
+
+1. **Listen** — Accept user input and add to message history
+2. **Detect Intent** — Parse LLM response for text vs tool call
+3. **Plan** — Determine if tool execution is appropriate
+4. **Parse** — Validate tool arguments against schema
+5. **Act** — Execute tool or deny with permission error
+6. **Report** — Add tool result to message history
+
+Each phase is independent and can be inspected. Phases 4-6 require explicit tool routing through permission checks.
+
+### Chat Session Management
+
+A `ChatSession` encapsulates one chat interaction:
+- Maintains structured message history
+- Manages permission state (initially no capabilities)
+- Provides tool routing with permission enforcement
+- Generates audit trails
+- Handles conversion to legacy message formats for LLM compatibility
+
+Chat sessions are created with an explicit system prompt and LLM backend:
+
+```go
+session, err := cli.NewChatSession(ctx, "You are a helpful assistant.", backend)
+if err != nil {
+    return err
+}
+
+// Grant permission for reads
+session.GrantPermission("FS_READ")
+
+// Add user message
+session.AddUserMessage("List the files in the current directory")
+
+// Execute tool (permission checked internally)
+result := session.ToolRouter.Handle(app.ToolCall{
+    Name: "fs.list",
+    Args: map[string]any{"path": "."},
+})
+
+// Result is added to message history automatically
+session.AddToolResultMessage("fs.list", result)
+```
+
+### Tool Execution & Validation
+
+Tools are executed through a strict validation pipeline:
+
+1. **Tool Existence Check** — Verify tool exists in registry
+2. **Permission Check** — Verify capability is granted
+3. **Schema Validation** — Validate arguments match declared schema
+4. **Execution** — Run the tool and return result or error
+5. **Audit Logging** — Record the attempt and result
+
+The router returns typed results compatible with both legacy and structured workflows.
+
+### Structured Response Parsing
+
+The LLM's response is parsed into a deterministic structure:
+
+```json
+{
+  "type": "action",
+  "action": {
+    "tool": "fs.read",
+    "args": {"path": "file.txt"}
+  }
+}
+```
+
+Or for text responses:
+
+```json
+{
+  "type": "text",
+  "text": "Here is the information you requested..."
+}
+```
+
+The parser is conservative and falls back to text mode if JSON parsing fails. Tool pattern detection works on common patterns but is not required.
 
 ---
 
@@ -114,8 +232,9 @@ Each phase is independent, deterministic, and inspectable.
 
 ## Testing
 
-goshi includes comprehensive test coverage for reliability and security:
+goshi includes comprehensive test coverage for reliability and security across all phases:
 
+**Core Packages:**
 - **Config** (51 tests): Configuration validation, environment variable handling, parameter bounds
 - **Filesystem Safety** (13 tests): Path traversal protection, symlink handling, guard mechanisms
 - **Protocol** (8 tests): Request parsing, manifest validation, JSON handling
@@ -124,7 +243,16 @@ goshi includes comprehensive test coverage for reliability and security:
 - **Execution** (9 tests): Dry-run vs actual execution, error handling
 - **Verification** (8 tests): Pass/fail determination, failure reporting
 
-**Total: 89+ passing tests** across core packages.
+**LLM Integration (Phase 1-4):**
+- **Messages & Types** (7 tests): Structured message types, message conversion, validation
+- **Tool Registry** (8 tests): Tool discovery, schema validation, registry population
+- **Structured Parsing** (15 tests): JSON responses, tool pattern detection, error handling
+- **Tool Router** (11 tests): Permission enforcement, tool dispatch, error responses
+- **Permission Model** (8 tests): Permission grant/deny, audit logging, multi-capability
+- **Chat Session** (5 tests): Session initialization, message history, permission state
+- **Integration** (18 tests): End-to-end tool execution, permission enforcement, 6-phase flow validation
+
+**Total: 165+ passing tests** across 15+ packages.
 
 Run all tests:
 
@@ -132,10 +260,22 @@ Run all tests:
 go test ./internal/...
 ```
 
-Run tests for a specific package:
+Run tests with coverage:
 
 ```bash
-go test -v ./internal/config
+go test -cover ./internal/...
+```
+
+Run specific test package:
+
+```bash
+go test -v ./internal/cli/...
+```
+
+Run specific test function:
+
+```bash
+go test -run TestIntegration_FSReadTool ./internal/cli
 ```
 
 ---
