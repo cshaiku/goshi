@@ -8,24 +8,32 @@ import (
 )
 
 // MockBackend implements llm.Backend for testing
-type MockBackend struct{}
+type MockBackend struct {
+	Responses []string // Allow customization of responses
+	CallCount int      // Track call count
+}
 
 func (m *MockBackend) Stream(ctx context.Context, system string, messages []llm.Message) (llm.Stream, error) {
-	return &MockStream{index: 0, data: []string{"test response"}}, nil
+	data := m.Responses
+	if data == nil {
+		data = []string{"test response"}
+	}
+	m.CallCount++
+	return &MockStream{Index: 0, Data: data}, nil
 }
 
 // MockStream implements llm.Stream for testing
 type MockStream struct {
-	index int
-	data  []string
+	Index int
+	Data  []string
 }
 
 func (m *MockStream) Recv() (string, error) {
-	if m.index >= len(m.data) {
-		return "", &mockStreamError{}
+	if m.Index >= len(m.Data) {
+		return "", &MockStreamError{}
 	}
-	chunk := m.data[m.index]
-	m.index++
+	chunk := m.Data[m.Index]
+	m.Index++
 	return chunk, nil
 }
 
@@ -33,11 +41,11 @@ func (m *MockStream) Close() error {
 	return nil
 }
 
-type mockStreamError struct{}
+type MockStreamError struct{}
 
-func (e *mockStreamError) Error() string   { return "end of stream" }
-func (e *mockStreamError) Timeout() bool   { return false }
-func (e *mockStreamError) Temporary() bool { return false }
+func (e *MockStreamError) Error() string   { return "end of stream" }
+func (e *MockStreamError) Timeout() bool   { return false }
+func (e *MockStreamError) Temporary() bool { return false }
 
 func TestNewChatSession(t *testing.T) {
 	ctx := context.Background()

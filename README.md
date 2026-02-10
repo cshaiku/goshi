@@ -8,6 +8,53 @@ This project explores a constrained, local-first model of AI-assisted tooling wh
 
 ---
 
+## Interactive Modes
+
+goshi offers two modes of interaction:
+
+### TUI Mode (Default)
+
+Run `goshi` or `goshi chat` to launch an interactive Text User Interface:
+
+```bash
+./goshi
+```
+
+**Features:**
+- Real-time LLM streaming with visual feedback
+- Scrollable message history (viewport)
+- Tool execution with status indicators (✓ success, ✗ error)
+- Law metrics displayed in header (rules, constraints, enforcement)
+- Multi-line input with textarea
+
+**Keyboard Controls:**
+- `Ctrl+S` or `Enter` — Send message
+- `Ctrl+C` or `Esc` — Quit
+- `↑/↓` — Scroll through message history
+- `PgUp/PgDn` — Page through history
+
+**Status Indicators:**
+- `●` — Waiting for LLM response
+- `▊` — Streaming in progress
+- `✓` — Tool executed successfully
+- `✗` — Tool execution failed
+
+### Headless/CLI Mode
+
+For scripts, automation, or traditional stdio interactions, use the `--headless` flag:
+
+```bash
+./goshi chat --headless
+```
+
+This mode provides:
+- Traditional stdin/stdout interaction
+- No terminal UI requirements
+- Suitable for piping and scripting
+- Same tool-calling and permission model
+
+---
+
 ## Purpose
 
 goshi explores a stricter model of AI-assisted automation where:
@@ -366,7 +413,12 @@ goshi includes comprehensive test coverage for reliability and security across a
 - **Chat Session** (5 tests): Session initialization, message history, permission state
 - **Integration** (18 tests): End-to-end tool execution, permission enforcement, 6-phase flow validation
 
-**Total: 165+ passing tests** across 15+ packages.
+**TUI Integration (Bubble Tea):**
+- **TUI Implementation** (9 tests): Model initialization, window resize, keyboard handling, message rendering
+- **LLM Streaming Display** (3 tests): Response completion, progressive display, error recovery
+- **Tool Execution UI** (2 tests): Tool result display, error handling, status indicators
+
+**Total: 230+ passing tests** across 16+ packages.
 
 Run all tests:
 

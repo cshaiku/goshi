@@ -10,6 +10,7 @@ import (
 
 	"github.com/cshaiku/goshi/internal/app"
 	"github.com/cshaiku/goshi/internal/llm"
+	"github.com/cshaiku/goshi/internal/session"
 )
 
 // ==============================================================================
@@ -40,11 +41,34 @@ func (m *MockLLMBackend) Stream(ctx context.Context, system string, messages []l
 	m.callCount++
 
 	return &MockStream{
-		data: []string{response},
+		Data: []string{response},
 	}, nil
 }
 
-// Note: MockStream is defined in session_test.go
+// MockStream implements llm.Stream for testing
+type MockStream struct {
+	Index int
+	Data  []string
+}
+
+func (m *MockStream) Recv() (string, error) {
+	if m.Index >= len(m.Data) {
+		return "", &MockStreamError{}
+	}
+	chunk := m.Data[m.Index]
+	m.Index++
+	return chunk, nil
+}
+
+func (m *MockStream) Close() error {
+	return nil
+}
+
+type MockStreamError struct{}
+
+func (e *MockStreamError) Error() string   { return "end of stream" }
+func (e *MockStreamError) Timeout() bool   { return false }
+func (e *MockStreamError) Temporary() bool { return false }
 
 // ==============================================================================
 // Test Helpers
@@ -110,7 +134,7 @@ func TestIntegration_FSListTool(t *testing.T) {
 	response := `{"type": "action", "action": {"tool": "fs.list", "args": {"path": "."}}}`
 	backend := NewMockLLMBackend(t, response)
 
-	session, err := NewChatSession(context.Background(), "You are a helpful assistant.", backend)
+	session, err := session.NewChatSession(context.Background(), "You are a helpful assistant.", backend)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -163,7 +187,7 @@ func TestIntegration_FSReadTool(t *testing.T) {
 	response := `{"type": "action", "action": {"tool": "fs.read", "args": {"path": "readme.txt"}}}`
 	backend := NewMockLLMBackend(t, response)
 
-	session, err := NewChatSession(context.Background(), "You are a helpful assistant.", backend)
+	session, err := session.NewChatSession(context.Background(), "You are a helpful assistant.", backend)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -208,7 +232,7 @@ func TestIntegration_FSWriteTool(t *testing.T) {
 	response := `{"type": "action", "action": {"tool": "fs.write", "args": {"path": "output.txt", "content": "Hello World"}}}`
 	backend := NewMockLLMBackend(t, response)
 
-	session, err := NewChatSession(context.Background(), "You are a helpful assistant.", backend)
+	session, err := session.NewChatSession(context.Background(), "You are a helpful assistant.", backend)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -266,7 +290,7 @@ func TestIntegration_PermissionDenied_FSRead(t *testing.T) {
 	os.Chdir(tmpDir)
 
 	backend := NewMockLLMBackend(t)
-	session, err := NewChatSession(context.Background(), "You are a helpful assistant.", backend)
+	session, err := session.NewChatSession(context.Background(), "You are a helpful assistant.", backend)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -302,7 +326,7 @@ func TestIntegration_PermissionDenied_FSWrite(t *testing.T) {
 	os.Chdir(tmpDir)
 
 	backend := NewMockLLMBackend(t)
-	session, err := NewChatSession(context.Background(), "You are a helpful assistant.", backend)
+	session, err := session.NewChatSession(context.Background(), "You are a helpful assistant.", backend)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -338,7 +362,7 @@ func TestIntegration_InvalidToolCall_MissingRequired(t *testing.T) {
 	os.Chdir(tmpDir)
 
 	backend := NewMockLLMBackend(t)
-	session, err := NewChatSession(context.Background(), "Test", backend)
+	session, err := session.NewChatSession(context.Background(), "Test", backend)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -366,7 +390,7 @@ func TestIntegration_InvalidToolCall_WrongType(t *testing.T) {
 	os.Chdir(tmpDir)
 
 	backend := NewMockLLMBackend(t)
-	session, err := NewChatSession(context.Background(), "Test", backend)
+	session, err := session.NewChatSession(context.Background(), "Test", backend)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -396,7 +420,7 @@ func TestIntegration_UnknownTool(t *testing.T) {
 	os.Chdir(tmpDir)
 
 	backend := NewMockLLMBackend(t)
-	session, err := NewChatSession(context.Background(), "Test", backend)
+	session, err := session.NewChatSession(context.Background(), "Test", backend)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -429,7 +453,7 @@ func TestIntegration_AuditTrail_PermissionGrant(t *testing.T) {
 	os.Chdir(tmpDir)
 
 	backend := NewMockLLMBackend(t)
-	session, err := NewChatSession(context.Background(), "Test", backend)
+	session, err := session.NewChatSession(context.Background(), "Test", backend)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -461,7 +485,7 @@ func TestIntegration_MessageHistory_Types(t *testing.T) {
 	os.Chdir(tmpDir)
 
 	backend := NewMockLLMBackend(t)
-	session, err := NewChatSession(context.Background(), "Test", backend)
+	session, err := session.NewChatSession(context.Background(), "Test", backend)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -563,7 +587,7 @@ func TestIntegration_FullChatFlow_TextResponse(t *testing.T) {
 	os.Chdir(tmpDir)
 
 	backend := NewMockLLMBackend(t, `{"type": "text", "text": "Here's the information you requested"}`)
-	session, err := NewChatSession(context.Background(), "Test system prompt", backend)
+	session, err := session.NewChatSession(context.Background(), "Test system prompt", backend)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -593,7 +617,7 @@ func TestIntegration_FullChatFlow_ToolExecution(t *testing.T) {
 	os.Chdir(tmpDir)
 
 	backend := NewMockLLMBackend(t)
-	session, err := NewChatSession(context.Background(), "Test system prompt", backend)
+	session, err := session.NewChatSession(context.Background(), "Test system prompt", backend)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -645,7 +669,7 @@ func TestIntegration_ToolRegistry_AllToolsAvailable(t *testing.T) {
 	os.Chdir(tmpDir)
 
 	backend := NewMockLLMBackend(t)
-	session, err := NewChatSession(context.Background(), "Test", backend)
+	session, err := session.NewChatSession(context.Background(), "Test", backend)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -680,7 +704,7 @@ func TestIntegration_ToolRegistry_SchemaValidation(t *testing.T) {
 	os.Chdir(tmpDir)
 
 	backend := NewMockLLMBackend(t)
-	session, err := NewChatSession(context.Background(), "Test", backend)
+	session, err := session.NewChatSession(context.Background(), "Test", backend)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
