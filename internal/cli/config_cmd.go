@@ -17,15 +17,12 @@ func newConfigCommand() *cobra.Command {
 		Short: "Manage goshi configuration",
 		Long: `Manage and inspect goshi configuration.
 
-Config files are searched in this order:
+Config file search order:
   1. $GOSHI_CONFIG environment variable
   2. .goshi.yaml (current directory)
   3. ~/.goshi/config.yaml (home directory)
   4. /etc/goshi/config.yaml (system-wide)
   5. Built-in defaults
-
-Environment variables override config files:
-  GOSHI_MODEL, GOSHI_LLM_PROVIDER, GOSHI_OLLAMA_URL, GOSHI_OLLAMA_PORT
 
 QUICK START:
   $ goshi config show              # Display current config
@@ -36,7 +33,14 @@ QUICK START:
 SEE ALSO:
   goshi help config show      - Display configuration
   goshi help config validate  - Validate configuration file
-  goshi help config init      - Generate config template`,
+  goshi help config init      - Generate config template
+
+ENVIRONMENT:
+  GOSHI_CONFIG        - Path to configuration file (overrides file search)
+  GOSHI_MODEL         - LLM model to use (overrides config file)
+  GOSHI_LLM_PROVIDER  - LLM provider: ollama, openai, etc. (overrides config file)
+  GOSHI_OLLAMA_URL    - Ollama server URL (overrides config file)
+  GOSHI_OLLAMA_PORT   - Ollama server port number (overrides config file)`,
 	}
 
 	cmd.AddCommand(
@@ -69,6 +73,12 @@ EXAMPLES:
   $ goshi config show --format=yaml
 
   $ goshi config show | jq '.llm.model'
+
+ENVIRONMENT:
+  GOSHI_MODEL         - Overrides LLM model setting
+  GOSHI_LLM_PROVIDER  - Overrides LLM provider setting
+  GOSHI_OLLAMA_URL    - Overrides Ollama server URL
+  GOSHI_OLLAMA_PORT   - Overrides Ollama server port
 
 EXIT CODES:
   0   - Success
@@ -126,6 +136,9 @@ EXAMPLES:
 
   $ goshi config validate /etc/goshi/config.yaml
   Error: invalid temperature: 5 (must be 0-2)
+
+ENVIRONMENT:
+  GOSHI_CONFIG  - Path to config file to validate (used if no argument provided)
 
 EXIT CODES:
   0   - Configuration is valid
@@ -202,6 +215,9 @@ EXAMPLES:
 
 	$ goshi config init --output /etc/goshi/config.yaml --overwrite
 	✓ Created /etc/goshi/config.yaml
+
+ENVIRONMENT:
+  GOSHI_CONFIG  - Ignored by init; config is created in specified location
 
 EXIT CODES:
   0   - Config file created successfully

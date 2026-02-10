@@ -23,7 +23,7 @@ EXAMPLES:
 EXIT CODES:
   0   - Success: Write proposal applied
   1   - Error: Invalid proposal ID or application failed`,
-		Args:  cobra.ExactArgs(1),
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Pass proposal ID directly.
 			return fs.ApplyWriteProposal(args[0])

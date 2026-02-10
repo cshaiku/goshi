@@ -45,10 +45,9 @@ Produces diagnostic output showing:
   - File access patterns
   - Handshake success/failure
 
-
-			 USAGE:
-				 $ goshi fs probe
-				 Runs probe in current working directory.
+USAGE:
+  $ goshi fs probe
+  Runs probe in current working directory.
 
 NOTES:
 - This is an experimental feature and may change
@@ -57,12 +56,15 @@ NOTES:
 - Not recommended for production workflows
 
 ENVIRONMENT:
+  GOSHI_CONFIG        - Path to configuration file to load
   GOSHI_MODEL         - LLM model to use (default: ollama)
-  GOSHI_LLM_PROVIDER  - LLM provider (default: auto)
+  GOSHI_LLM_PROVIDER  - LLM provider: ollama, openai, etc. (default: auto)
+  GOSHI_OLLAMA_URL    - Ollama server URL
+  GOSHI_OLLAMA_PORT   - Ollama server port number
 
-			 SEE ALSO:
-				 goshi fs            - Main filesystem operations (read, write, list, apply, probe)
-				 goshi help          - Show general help information`,
+SEE ALSO:
+  goshi fs            - Main filesystem operations (read, write, list, apply, probe)
+  goshi help          - Show general help information`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if runtime == nil || runtime.SystemPrompt == nil {
 				return fmt.Errorf("runtime not initialized")

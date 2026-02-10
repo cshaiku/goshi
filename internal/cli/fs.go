@@ -36,7 +36,10 @@ SEE ALSO:
   goshi help fs list    - List directory contents
   goshi help fs write   - Propose a file write (from stdin)
   goshi help fs apply   - Apply a write proposal (review first)
-  goshi help fs probe   - Experimental: Test LLM filesystem handshake`,
+  goshi help fs probe   - Experimental: Test LLM filesystem handshake
+
+ENVIRONMENT:
+  GOSHI_CONFIG  - Path to configuration file (default: searched in standard locations)`,
 	}
 
 	cmd.AddCommand(
@@ -139,7 +142,7 @@ EXAMPLES:
 EXIT CODES:
   0   - Success: Directory listed successfully
   1   - Error: Directory not found or access denied`,
-		Args:  cobra.RangeArgs(0, 1),
+		Args: cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path := "."
 			if len(args) == 1 {
@@ -183,7 +186,7 @@ EXAMPLES:
 EXIT CODES:
   0   - Success: Write proposal created
   1   - Error: No stdin provided or invalid path`,
-		Args:  cobra.ExactArgs(1),
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			b, err := io.ReadAll(os.Stdin)
 			if err != nil {
