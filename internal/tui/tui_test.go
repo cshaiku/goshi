@@ -163,3 +163,71 @@ func TestLLMErrorMessage(t *testing.T) {
 		t.Errorf("expected in-progress message to be removed, got %d messages", len(updated.messages))
 	}
 }
+
+func TestToolExecutionMessage(t *testing.T) {
+	m := newModel("test", nil)
+	m.ready = true
+
+	// Simulate tool execution result
+	toolMsg := toolExecutionMsg{
+		toolName: "fs.read",
+		result: map[string]any{
+			"result": "file contents here",
+		},
+	}
+
+	updatedModel, _ := m.Update(toolMsg)
+	updated := updatedModel.(model)
+
+	if updated.statusLine != "Ready" {
+		t.Errorf("expected status 'Ready', got %q", updated.statusLine)
+	}
+
+	if len(updated.messages) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(updated.messages))
+	}
+
+	if updated.messages[0].Role != "assistant" {
+		t.Errorf("expected role 'assistant', got %q", updated.messages[0].Role)
+	}
+
+	if !strings.Contains(updated.messages[0].Content, "fs.read") {
+		t.Error("expected message to contain tool name")
+	}
+
+	if !strings.Contains(updated.messages[0].Content, "file contents here") {
+		t.Error("expected message to contain result")
+	}
+}
+
+func TestToolExecutionError(t *testing.T) {
+	m := newModel("test", nil)
+	m.ready = true
+
+	// Simulate tool execution error
+	toolMsg := toolExecutionMsg{
+		toolName: "fs.write",
+		result: map[string]any{
+			"error": "permission denied",
+		},
+	}
+
+	updatedModel, _ := m.Update(toolMsg)
+	updated := updatedModel.(model)
+
+	if updated.err == nil {
+		t.Error("expected error to be set")
+	}
+
+	if len(updated.messages) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(updated.messages))
+	}
+
+	if !strings.Contains(updated.messages[0].Content, "failed") {
+		t.Error("expected message to indicate failure")
+	}
+
+	if !strings.Contains(updated.messages[0].Content, "permission denied") {
+		t.Error("expected message to contain error")
+	}
+}

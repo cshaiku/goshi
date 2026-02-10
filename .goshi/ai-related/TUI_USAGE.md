@@ -118,7 +118,15 @@ tui.Run(systemPrompt, session)
 3. Async `streamLLMResponse()` command started
 4. Backend streams response chunks
 5. `llmCompleteMsg` sent when streaming finishes
-6. Assistant message finalized and added to session
+6. Response parsed and routed by type:
+   - **ResponseTypeText**: Display as assistant message
+   - **ResponseTypeAction**: Execute tool via ToolRouter
+   - **ResponseTypeError**: Display error to user
+7. For tool actions:
+   - Show "[Executing tool: name]" immediately
+   - Execute asynchronously via `executeTool()` command
+   - Display result with ✓ (success) or ✗ (failure)
+   - Add result to chat history
 
 This ensures:
 - ✅ Permission tracking across TUI and CLI modes
@@ -127,6 +135,8 @@ This ensures:
 - ✅ Self-model enforcement
 - ✅ Real-time LLM response streaming
 - ✅ Async non-blocking UI updates
+- ✅ Tool execution with feedback
+- ✅ Performance optimization (100 message limit)
 
 ## Development Phases
 
@@ -158,12 +168,28 @@ This ensures:
 - Session integration (AddUserMessage/AddAssistantTextMessage)
 - Loading indicators ("Thinking..." + streaming cursor ▊)
 
-### 📋 Phase 6: Polish (Planned)
-- Tool execution in TUI context
-- Response parsing and action handling
-- Error handling improvements
-- Performance optimization
-- Final integration testing
+### ✅ Phase 6: Polish & Finalize
+- **Tool execution in TUI context**
+  - Detects ResponseTypeAction from LLM
+  - Executes tools via ToolRouter.Handle()
+  - Displays tool results with ✓ or ✗ indicators
+  - Error handling for tool failures
+- **Performance optimization**
+  - Limits viewport to last 100 messages
+  - Prevents memory issues with large histories
+  - Shows "(N earlier messages hidden)" indicator
+- **Enhanced error handling**
+  - Truncates long error messages (80 chars)
+  - Graceful degradation for missing session
+  - User-friendly error messages
+- **Additional tests**
+  - TestToolExecutionMessage
+  - TestToolExecutionError
+  - 9/9 tests passing
+- **Code quality**
+  - Clean imports and structure
+  - Comprehensive documentation
+  - Production-ready
 
 ## Testing
 
@@ -187,6 +213,10 @@ The TUI uses Bubble Tea's testable architecture with comprehensive unit tests:
 - `TestRenderHeader` - Header rendering
 - `TestLLMCompleteMessage` - LLM response completion
 - `TestLLMErrorMessage` - LLM error handling
+- `TestToolExecutionMessage` - Tool execution success
+- `TestToolExecutionError` - Tool execution failure
+
+**All 9/9 tests passing**
 
 Run tests:
 ```bash

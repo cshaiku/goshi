@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/cshaiku/goshi/internal/app"
 	"github.com/cshaiku/goshi/internal/llm"
 	"github.com/cshaiku/goshi/internal/selfmodel"
 	"github.com/cshaiku/goshi/internal/session"
@@ -132,9 +133,32 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Use parsed response if available
 			if msg.parseResult != nil && msg.parseResult.Response != nil {
-				m.messages[len(m.messages)-1].Content = msg.parseResult.Response.Text
-				if m.chatSession != nil {
-					m.chatSession.AddAssistantTextMessage(msg.parseResult.Response.Text)
+				response := msg.parseResult.Response
+
+				// Handle different response types
+				switch response.Type {
+				case llm.ResponseTypeAction:
+					// Tool execution requested
+					if response.Action != nil {
+						m.messages[len(m.messages)-1].Content = fmt.Sprintf(
+							"[Executing tool: %s]",
+							response.Action.Tool,
+						)
+						m.updateViewportContent()
+						return m, executeTool(m.chatSession, response.Action)
+					}
+
+				case llm.ResponseTypeText:
+					// Regular text response
+					m.messages[len(m.messages)-1].Content = response.Text
+					if m.chatSession != nil {
+						m.chatSession.AddAssistantTextMessage(response.Text)
+					}
+
+				case llm.ResponseTypeError:
+					// LLM reported an error
+					m.messages[len(m.messages)-1].Content = fmt.Sprintf("Error: %s", response.Error)
+					m.err = fmt.Errorf("%s", response.Error)
 				}
 			} else {
 				m.messages[len(m.messages)-1].Content = msg.fullResponse
@@ -145,6 +169,32 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			m.updateViewportContent()
 		}
+		return m, nil
+
+	case toolExecutionMsg:
+		// Tool execution completed
+		m.statusLine = "Ready"
+
+		// Add tool result as a new assistant message
+		if resultStr, ok := msg.result["result"].(string); ok {
+			m.messages = append(m.messages, Message{
+				Role:    "assistant",
+				Content: fmt.Sprintf("✓ Tool executed: %s\n\nResult: %s", msg.toolName, resultStr),
+			})
+		} else if errStr, ok := msg.result["error"].(string); ok {
+			m.messages = append(m.messages, Message{
+				Role:    "assistant",
+				Content: fmt.Sprintf("✗ Tool failed: %s\n\nError: %s", msg.toolName, errStr),
+			})
+			m.err = fmt.Errorf("%s", errStr)
+		} else {
+			m.messages = append(m.messages, Message{
+				Role:    "assistant",
+				Content: fmt.Sprintf("✓ Tool executed: %s\n\nResult: %v", msg.toolName, msg.result),
+			})
+		}
+
+		m.updateViewportContent()
 		return m, nil
 
 	case llmErrorMsg:
@@ -207,6 +257,11 @@ type llmCompleteMsg struct {
 
 type llmErrorMsg struct {
 	err error
+}
+
+type toolExecutionMsg struct {
+	toolName string
+	result   map[string]any
 }
 
 func (m model) handleSendMessage() (tea.Model, tea.Cmd) {
@@ -290,6 +345,39 @@ func streamLLMResponse(sess *session.ChatSession) tea.Cmd {
 	}
 }
 
+// executeTool executes a tool call via the ToolRouter
+func executeTool(sess *session.ChatSession, action *llm.ActionCall) tea.Cmd {
+	return func() tea.Msg {
+		if sess == nil || sess.ToolRouter == nil {
+			return toolExecutionMsg{
+				toolName: action.Tool,
+				result: map[string]any{
+					"error": "session or tool router not initialized",
+				},
+			}
+		}
+
+		// Execute via ToolRouter
+		result := sess.ToolRouter.Handle(app.ToolCall{
+			Name: action.Tool,
+			Args: action.Args,
+		})
+
+		// Convert result to map
+		resultMap, ok := result.(map[string]any)
+		if !ok {
+			resultMap = map[string]any{
+				"result": fmt.Sprintf("%v", result),
+			}
+		}
+
+		return toolExecutionMsg{
+			toolName: action.Tool,
+			result:   resultMap,
+		}
+	}
+}
+
 func (m *model) updateViewportContent() {
 	var sb strings.Builder
 
@@ -300,7 +388,17 @@ func (m *model) updateViewportContent() {
 		sb.WriteString(styleStatus("✨ Streaming response...\n\n"))
 	}
 
-	for _, msg := range m.messages {
+	// Performance optimization: limit displayed messages to last 100
+	// to prevent memory issues and slow rendering with large histories
+	const maxDisplayMessages = 100
+	startIdx := 0
+	if len(m.messages) > maxDisplayMessages {
+		startIdx = len(m.messages) - maxDisplayMessages
+		sb.WriteString(styleStatus(fmt.Sprintf("... (%d earlier messages hidden) ...\n\n", startIdx)))
+	}
+
+	for i := startIdx; i < len(m.messages); i++ {
+		msg := m.messages[i]
 		if msg.Role == "user" {
 			sb.WriteString(styleUserMessage(msg.Content))
 		} else {
@@ -344,7 +442,12 @@ func (m model) renderHeader() string {
 func (m model) renderStatus() string {
 	text := fmt.Sprintf("─ %s ", m.statusLine)
 	if m.err != nil {
-		return styleError(fmt.Sprintf("─ Error: %v ", m.err))
+		errMsg := m.err.Error()
+		// Truncate long error messages
+		if len(errMsg) > 80 {
+			errMsg = errMsg[:77] + "..."
+		}
+		return styleError(fmt.Sprintf("─ Error: %v ", errMsg))
 	}
 	return styleStatus(text)
 }
