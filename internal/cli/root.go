@@ -50,9 +50,9 @@ func Execute(rt *Runtime) {
 	// Register all subcommands
 	rootCmd.AddCommand(
 		newFSCommand(),
-		newFSProbeCmd(),
 		newDoctorCmd(&cfg),
 		newHealCmd(&cfg),
+		newConfigCommand(),
 	)
 
 	if err := rootCmd.Execute(); err != nil {

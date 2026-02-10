@@ -81,6 +81,7 @@ SEE ALSO:
 		newFSListCommand(),
 		newFSWriteCommand(),
 		newFSApplyCommand(),
+		newFSProbeCmd(),
 	)
 
 	return cmd
