@@ -466,39 +466,61 @@ llm:
     port: 11434
 ```
 
-### OpenAI Backend (Phase 1: MVP)
+### OpenAI Backend (Phases 1-3 Complete)
 
-**Location**: `internal/llm/openai/client.go`
+**Location**: `internal/llm/openai/`
 
-**Features (Phase 1)**:
+**Features (Phase 1 — MVP)**:
 - Cloud-based execution via OpenAI API
-- Basic non-streaming responses
 - Prompt-based tool calling (same format as Ollama)
 - Temperature: 0 for deterministic tool calls
 - API key authentication via `OPENAI_API_KEY`
-- Token usage logging for cost visibility
 - Basic error handling (401, 429, 500+)
+
+**Features (Phase 2 — Production Ready)**:
+- ✅ Server-Sent Events (SSE) streaming for real-time responses
+- ✅ Native OpenAI function calling API
+- ✅ Exponential backoff retry logic (1s-60s with jitter)
+- ✅ Comprehensive HTTP error handling
+- ✅ Structured error messages with user-friendly hints
+- ✅ 3 retry attempts with automatic fallback
+
+**Features (Phase 3 — Optimization)**:
+- ✅ **Cost Monitoring**: Token usage tracking with per-model pricing
+- ✅ **Circuit Breaker**: Auto-recovery from repeated failures
+- ✅ **Connection Pooling**: Shared HTTP client for better performance
+- ✅ Session-level cost limits with warning thresholds
+- ✅ Real-time cost calculation and logging
 
 **Usage**:
 ```go
 import "github.com/cshaiku/goshi/internal/llm/openai"
 
 // Requires OPENAI_API_KEY environment variable
-backend, err := openai.New("gpt-4o")
+backend, err := openai.New("gpt-4o-mini")
 if err != nil {
     // Handle missing API key
 }
 
 session, _ := cli.NewChatSession(ctx, systemPrompt, backend)
+
+// Phase 3: Monitor costs
+summary := backend.GetCostSummary()
+fmt.Printf("Total cost: $%.4f (%d requests)\n", 
+    summary.TotalCost, summary.RequestCount)
+
+// Phase 3: Check circuit breaker status
+stats := backend.GetCircuitState()
+fmt.Printf("Circuit state: %s\n", stats.State)
 ```
 
 **Configuration**:
 ```yaml
 llm:
   provider: openai
-  model: gpt-4o          # or gpt-4o-mini, gpt-4-turbo
+  model: gpt-4o-mini     # or gpt-4o, gpt-4-turbo, gpt-4, gpt-3.5-turbo
   temperature: 0
-  request_timeout: 60
+  request_timeout: 120   # Phase 3: 120s timeout for long requests
 ```
 
 **Environment Setup**:
@@ -513,48 +535,96 @@ export OPENAI_ORG_ID='org-...'
 ./goshi chat
 ```
 
-**Error Handling**:
+**Error Handling (Phase 2)**:
 - **401 Unauthorized**: Invalid or missing API key → shows setup instructions
-- **429 Rate Limited**: Too many requests → suggests waiting
-- **500/503 Server Errors**: OpenAI service issues → suggests retry
-- **Network Errors**: Connection failures → shows debugging hints
+- **429 Rate Limited**: Retries with exponential backoff (1s, 2s, 4s...)
+- **500-504 Server Errors**: Automatic retry up to 3 attempts
+- **Network Errors**: Retries with backoff → shows debugging hints
+- **Circuit Open**: After 5 failures, circuit opens for 30s cooldown
 
-**Cost Visibility**:
-Token usage is logged to stderr after each request:
+**Cost Tracking (Phase 3)**:
+Per-request logging with detailed cost breakdown:
 ```
-[OpenAI] Tokens - prompt: 150, completion: 42, total: 192 (model: gpt-4o)
+[OpenAI] Request cost: $0.0023 | Tokens: 150 prompt + 42 completion = 192 total (model: gpt-4o-mini)
 ```
 
-**Limitations (Phase 1)**:
-- ⚠️  No streaming support (Phase 2)
-- ⚠️  No native OpenAI tool calling (Phase 2)
-- ⚠️  Basic retry logic only
-- ⚠️  No cost monitoring or warnings
+Session cost summary:
+```
+[OpenAI Cost] Model: gpt-4o-mini | Requests: 5 | Tokens: 3250 (prompt: 2100, completion: 1150) | Cost: $0.0142 (avg: $0.0028/req) | Duration: 45s
+```
 
-**Upcoming (Phase 2 — Production Ready)**:
-- ✨ Server-Sent Events (SSE) streaming
-- ✨ Native OpenAI function calling API
-- ✨ Comprehensive error handling with exponential backoff
-- ✨ Advanced timeout management
+**Model Pricing (Phase 3)**:
+Goshi tracks costs for all major OpenAI models:
 
-**Upcoming (Phase 3 — Optimization)**:
-- ✨ Cost monitoring and warnings
-- ✨ Circuit breaker pattern for reliability
-- ✨ Connection pooling for performance
+| Model | Input (per 1M tokens) | Output (per 1M tokens) |
+|-------|----------------------|------------------------|
+| gpt-4o | $2.50 | $10.00 |
+| gpt-4o-mini | $0.15 | $0.60 |
+| gpt-4-turbo | $10.00 | $30.00 |
+| gpt-4 | $30.00 | $60.00 |
+| gpt-3.5-turbo | $0.50 | $1.50 |
+
+Default session limits:
+- **Warning threshold**: $1.00 (displays warning message)
+- **Hard limit**: $10.00 (rejects further requests)
+
+**Circuit Breaker (Phase 3)**:
+Automatic protection from cascading failures:
+
+- **Closed**: Normal operation, requests flow through
+- **Open**: After 5 consecutive failures, circuit opens for 30s
+- **Half-Open**: Tests with 3 requests to check if service recovered
+
+Example circuit breaker logging:
+```
+[OpenAI Circuit Breaker] Opened: 5 consecutive failures (cooldown: 30s)
+[OpenAI Circuit Breaker] Recovered: circuit closed after 3 successful requests
+```
+
+**Connection Pooling (Phase 3)**:
+Optimized HTTP client configuration:
+- **MaxIdleConns**: 100 (total idle connections)
+- **MaxIdleConnsPerHost**: 10 (per OpenAI host)
+- **IdleConnTimeout**: 90s (keep connections warm)
+- **Request Timeout**: 120s (overall timeout)
+- **Keep-Alive**: Enabled for connection reuse
+
+**Limitations**:
+- ⚠️  Cloud-based (data sent to OpenAI)
+- ⚠️  Costs money per token
+- ⚠️  Requires internet connectivity
+
+**Implementation Files**:
+- `internal/llm/openai/client.go` — Main client with Backend interface
+- `internal/llm/openai/stream.go` — SSE streaming and cost tracking
+- `internal/llm/openai/tools.go` — OpenAI function calling conversion
+- `internal/llm/openai/errors.go` — Error handling and retry logic
+- `internal/llm/openai/cost.go` — Cost monitoring and pricing
+- `internal/llm/openai/circuit_breaker.go` — Circuit breaker pattern
+
+**Upcoming (Phase 4 — Advanced)**:
+- ✨ Configurable cost limits per session
+- ✨ Cost budget enforcement
+- ✨ Fallback to Ollama when circuit opens
+
 
 ### Backend Comparison
 
-| Feature | Ollama | OpenAI (Phase 1) |
-|---------|--------|------------------|
+| Feature | Ollama | OpenAI |
+|---------|--------|--------|
 | **Execution** | Local | Cloud API |
 | **Privacy** | ✅ Full | ❌ Data sent to OpenAI |
 | **Cost** | ✅ Free | ❌ Pay per token |
 | **Internet** | ❌ Not required | ✅ Required |
-| **Streaming** | ✅ Yes | ❌ Phase 2 |
-| **Tool Calling** | Prompt-based | Prompt-based (Phase 2: native) |
+| **Streaming** | ✅ Yes | ✅ Yes (Phase 2) |
+| **Tool Calling** | Prompt-based | ✅ Native API (Phase 2) |
 | **Setup** | Install Ollama | Set API key |
 | **Token Logging** | ❌ No | ✅ Yes |
-| **Error Recovery** | Basic | Basic (Phase 2: advanced) |
+| **Error Recovery** | Basic | ✅ Advanced (Phase 2) |
+| **Cost Monitoring** | N/A | ✅ Yes (Phase 3) |
+| **Circuit Breaker** | ❌ No | ✅ Yes (Phase 3) |
+| **Connection Pooling** | ✅ Yes | ✅ Yes (Phase 3) |
+| **Retry Logic** | Basic | ✅ Exponential backoff (Phase 2) |
 
 ### Creating Custom Backends
 

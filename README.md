@@ -328,8 +328,17 @@ export GOSHI_LLM_PROVIDER=auto
 | **Internet Required** | ❌ No | ✅ Yes |
 | **Setup Complexity** | Medium (install + pull models) | Low (just API key) |
 | **Model Selection** | Any Ollama-compatible model | OpenAI models only |
-| **Streaming** | ✅ Yes | ⚠️  Phase 2 (planned) |
-| **Tool Calling** | ✅ Yes (prompt-based) | ⚠️  Phase 2 (native API) |
+| **Streaming** | ✅ Yes | ✅ Yes (Phase 2) |
+| **Tool Calling** | ✅ Yes (prompt-based) | ✅ Yes (Phase 2) |
+| **Cost Monitoring** | N/A | ✅ Yes (Phase 3) |
+| **Circuit Breaker** | ❌ No | ✅ Yes (Phase 3) |
+| **Connection Pooling** | ✅ Yes | ✅ Yes (Phase 3) |
+| **Retry Logic** | ✅ Basic | ✅ Advanced (Phase 2/3) |
+
+**Phase 3 Optimization Features (OpenAI):**
+- **Cost Tracking**: Per-model pricing, session limits, warning thresholds
+- **Circuit Breaker**: Auto-recovery from failures, 3-state protection
+- **Connection Pooling**: Shared HTTP client, keep-alive, configurable limits
 
 For full LLM integration details, see [LLM_INTEGRATION.md](LLM_INTEGRATION.md).
 
