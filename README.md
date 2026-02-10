@@ -230,6 +230,111 @@ Each phase is independent, deterministic, and inspectable.
 
 ---
 
+## LLM Provider Configuration
+
+goshi supports multiple LLM backends with a local-first philosophy.
+
+### Ollama (Default — Local)
+
+Ollama is the default provider, running models entirely on your machine:
+
+```bash
+# Install Ollama (https://ollama.ai)
+ollama pull qwen3:8b-q8_0
+
+# Run goshi (auto-detects Ollama)
+./goshi chat
+```
+
+**Configuration** (`goshi.yaml` or `config.yaml`):
+```yaml
+llm:
+  provider: ollama  # or "auto" to auto-detect
+  model: qwen3:8b-q8_0
+  temperature: 0
+  local:
+    url: http://localhost
+    port: 11434
+```
+
+### OpenAI (Cloud Alternative)
+
+For cloud-based models, goshi supports OpenAI's API:
+
+**Setup:**
+
+1. Get an API key from https://platform.openai.com/api-keys
+2. Set the environment variable:
+   ```bash
+   export OPENAI_API_KEY='sk-...'
+   ```
+
+3. Configure the provider:
+   ```yaml
+   llm:
+     provider: openai
+     model: gpt-4o          # or gpt-4o-mini, gpt-4-turbo
+     temperature: 0
+   ```
+
+4. Run goshi:
+   ```bash
+   ./goshi chat
+   ```
+
+**Supported Models:**
+- `gpt-4o` — Latest GPT-4 Omni (recommended)
+- `gpt-4o-mini` — Faster, more cost-effective
+- `gpt-4-turbo` — Previous generation GPT-4
+- `gpt-3.5-turbo` — Legacy model (not recommended for tool calling)
+
+**Important Notes:**
+- OpenAI requires internet connectivity
+- API usage incurs costs (see https://openai.com/pricing)
+- Token usage is logged to stderr for visibility
+- Goshi maintains its local-first philosophy: Ollama is always preferred in auto-detect
+- OpenAI backend uses the same tool-calling protocol as Ollama
+- All safety invariants and permission checks apply equally
+
+**Environment Variables:**
+```bash
+# Required
+export OPENAI_API_KEY='your-api-key-here'
+
+# Optional (for organization accounts)
+export OPENAI_ORG_ID='org-...'
+```
+
+**Provider Selection:**
+```bash
+# Explicit provider via config
+vim config.yaml  # Set provider: openai
+
+# Or via environment variable
+export GOSHI_LLM_PROVIDER=openai
+./goshi chat
+
+# Auto-detect (prefers Ollama if available)
+export GOSHI_LLM_PROVIDER=auto
+./goshi chat
+```
+
+### Backend Comparison
+
+| Feature | Ollama | OpenAI |
+|---------|--------|--------|
+| **Privacy** | ✅ Fully local | ❌ Cloud-based |
+| **Cost** | ✅ Free | ❌ Pay per token |
+| **Internet Required** | ❌ No | ✅ Yes |
+| **Setup Complexity** | Medium (install + pull models) | Low (just API key) |
+| **Model Selection** | Any Ollama-compatible model | OpenAI models only |
+| **Streaming** | ✅ Yes | ⚠️  Phase 2 (planned) |
+| **Tool Calling** | ✅ Yes (prompt-based) | ⚠️  Phase 2 (native API) |
+
+For full LLM integration details, see [LLM_INTEGRATION.md](LLM_INTEGRATION.md).
+
+---
+
 ## Testing
 
 goshi includes comprehensive test coverage for reliability and security across all phases:

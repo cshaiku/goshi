@@ -64,7 +64,7 @@ func runChat(systemPrompt string) {
 	// Initialize LLM backend
 	var backend llm.Backend
 	var err error
-	
+
 	if cfg.LLMProvider == "ollama" || cfg.LLMProvider == "" || cfg.LLMProvider == "auto" {
 		backend = ollama.New(cfg.Model)
 	} else if cfg.LLMProvider == "openai" {

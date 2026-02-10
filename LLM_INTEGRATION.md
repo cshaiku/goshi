@@ -427,6 +427,164 @@ func TestMyIntegration(t *testing.T) {
 }
 ```
 
+## Backend Implementations
+
+goshi supports multiple LLM backends through the `llm.Backend` interface:
+
+```go
+type Backend interface {
+    Stream(ctx context.Context, system string, messages []Message) (Stream, error)
+}
+```
+
+### Ollama Backend
+
+**Location**: `internal/llm/ollama/client.go`
+
+**Features**:
+- Fully local execution (no internet required)
+- Streaming responses via `/api/chat` endpoint
+- Prompt-based tool calling (hardcoded instructions injected)
+- Temperature: 0 for deterministic tool calls
+- Auto-detection via health endpoint `/api/tags`
+
+**Usage**:
+```go
+import "github.com/cshaiku/goshi/internal/llm/ollama"
+
+backend := ollama.New("qwen3:8b-q8_0")
+session, _ := cli.NewChatSession(ctx, systemPrompt, backend)
+```
+
+**Configuration**:
+```yaml
+llm:
+  provider: ollama
+  model: qwen3:8b-q8_0
+  local:
+    url: http://localhost
+    port: 11434
+```
+
+### OpenAI Backend (Phase 1: MVP)
+
+**Location**: `internal/llm/openai/client.go`
+
+**Features (Phase 1)**:
+- Cloud-based execution via OpenAI API
+- Basic non-streaming responses
+- Prompt-based tool calling (same format as Ollama)
+- Temperature: 0 for deterministic tool calls
+- API key authentication via `OPENAI_API_KEY`
+- Token usage logging for cost visibility
+- Basic error handling (401, 429, 500+)
+
+**Usage**:
+```go
+import "github.com/cshaiku/goshi/internal/llm/openai"
+
+// Requires OPENAI_API_KEY environment variable
+backend, err := openai.New("gpt-4o")
+if err != nil {
+    // Handle missing API key
+}
+
+session, _ := cli.NewChatSession(ctx, systemPrompt, backend)
+```
+
+**Configuration**:
+```yaml
+llm:
+  provider: openai
+  model: gpt-4o          # or gpt-4o-mini, gpt-4-turbo
+  temperature: 0
+  request_timeout: 60
+```
+
+**Environment Setup**:
+```bash
+# Required
+export OPENAI_API_KEY='sk-...'
+
+# Optional (for organization accounts)
+export OPENAI_ORG_ID='org-...'
+
+# Run goshi
+./goshi chat
+```
+
+**Error Handling**:
+- **401 Unauthorized**: Invalid or missing API key → shows setup instructions
+- **429 Rate Limited**: Too many requests → suggests waiting
+- **500/503 Server Errors**: OpenAI service issues → suggests retry
+- **Network Errors**: Connection failures → shows debugging hints
+
+**Cost Visibility**:
+Token usage is logged to stderr after each request:
+```
+[OpenAI] Tokens - prompt: 150, completion: 42, total: 192 (model: gpt-4o)
+```
+
+**Limitations (Phase 1)**:
+- ⚠️  No streaming support (Phase 2)
+- ⚠️  No native OpenAI tool calling (Phase 2)
+- ⚠️  Basic retry logic only
+- ⚠️  No cost monitoring or warnings
+
+**Upcoming (Phase 2 — Production Ready)**:
+- ✨ Server-Sent Events (SSE) streaming
+- ✨ Native OpenAI function calling API
+- ✨ Comprehensive error handling with exponential backoff
+- ✨ Advanced timeout management
+
+**Upcoming (Phase 3 — Optimization)**:
+- ✨ Cost monitoring and warnings
+- ✨ Circuit breaker pattern for reliability
+- ✨ Connection pooling for performance
+
+### Backend Comparison
+
+| Feature | Ollama | OpenAI (Phase 1) |
+|---------|--------|------------------|
+| **Execution** | Local | Cloud API |
+| **Privacy** | ✅ Full | ❌ Data sent to OpenAI |
+| **Cost** | ✅ Free | ❌ Pay per token |
+| **Internet** | ❌ Not required | ✅ Required |
+| **Streaming** | ✅ Yes | ❌ Phase 2 |
+| **Tool Calling** | Prompt-based | Prompt-based (Phase 2: native) |
+| **Setup** | Install Ollama | Set API key |
+| **Token Logging** | ❌ No | ✅ Yes |
+| **Error Recovery** | Basic | Basic (Phase 2: advanced) |
+
+### Creating Custom Backends
+
+Implement the `llm.Backend` interface:
+
+```go
+type MyBackend struct {}
+
+func (b *MyBackend) Stream(
+    ctx context.Context,
+    system string,
+    messages []llm.Message,
+) (llm.Stream, error) {
+    // Your implementation
+    return myStream, nil
+}
+
+// Use it
+backend := &MyBackend{}
+session, _ := cli.NewChatSession(ctx, systemPrompt, backend)
+```
+
+The `Stream` interface expects:
+```go
+type Stream interface {
+    Recv() (string, error)  // Returns content or io.EOF when done
+    Close() error           // Cleanup
+}
+```
+
 ## See Also
 
 - [README.md](README.md) — Architecture overview
