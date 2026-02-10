@@ -27,8 +27,14 @@ func printStatus(systemPrompt string, perms Permissions) {
 	metrics := selfmodel.ComputeLawMetrics(systemPrompt)
 	label := "ENFORCEMENT STAGED"
 	color := colorYellow
-	if perms.FSRead {
+	if perms.FSRead && perms.FSWrite {
+		label = "ENFORCEMENT ACTIVE (FS_READ + FS_WRITE)"
+		color = colorGreen
+	} else if perms.FSRead {
 		label = "ENFORCEMENT ACTIVE (FS_READ)"
+		color = colorGreen
+	} else if perms.FSWrite {
+		label = "ENFORCEMENT ACTIVE (FS_WRITE)"
 		color = colorGreen
 	}
 	fmt.Printf("Self-Model Law Index: %d lines · %d constraints · %s%s%s\n",
@@ -44,6 +50,11 @@ func printStatus(systemPrompt string, perms Permissions) {
 
 func refuseFSRead() {
 	fmt.Println("Filesystem access denied.\nPermission was not granted for this session.")
+	fmt.Println("-----------------------------------------------------")
+}
+
+func refuseFSWrite() {
+	fmt.Println("Filesystem write access denied.\nPermission was not granted for this session.")
 	fmt.Println("-----------------------------------------------------")
 }
 
@@ -75,9 +86,12 @@ func runChat(systemPrompt string) {
 		fmt.Print("You: ")
 		line, _ := reader.ReadString('\n')
 		line = strings.TrimSpace(line)
-		if line == "" { continue }
+		if line == "" {
+			continue
+		}
 
 		detected := detect.DetectCapabilities(line, detect.FSReadRules)
+		detected = append(detected, detect.DetectCapabilities(line, detect.FSWriteRules)...)
 		handled := false
 
 		if len(detected) > 0 {
@@ -92,6 +106,16 @@ func runChat(systemPrompt string) {
 					caps.Grant(app.CapFSRead)
 					printStatus(systemPrompt, perms)
 				}
+				if cap == detect.CapabilityFSWrite && !perms.FSWrite {
+					if !RequestFSWritePermission(cwd) {
+						refuseFSWrite()
+						handled = true
+						break
+					}
+					perms.FSWrite = true
+					caps.Grant(app.CapFSWrite)
+					printStatus(systemPrompt, perms)
+				}
 			}
 
 			if perms.FSRead && !handled {
@@ -100,11 +124,15 @@ func runChat(systemPrompt string) {
 				matches := re.FindStringSubmatch(line)
 
 				if len(matches) > 1 {
-					verb := strings.ToLower(matches[3])
+					verb := strings.ToLower(matches[1])
 					toolName := "fs.list"
 					toolPath := "."
-					if verb == "read" { toolName = "fs.read" }
-					if len(matches) > 2 && matches[4] != "" { toolPath = matches[4] }
+					if verb == "read" {
+						toolName = "fs.read"
+					}
+					if len(matches) > 2 && matches[2] != "" {
+						toolPath = matches[2]
+					}
 
 					result := router.Handle(app.ToolCall{Name: toolName, Args: map[string]any{"path": toolPath}})
 					fmt.Println("Goshi (Direct Action):")
@@ -115,17 +143,23 @@ func runChat(systemPrompt string) {
 			}
 		}
 
-		if handled { continue }
+		if handled {
+			continue
+		}
 
 		messages = append(messages, llm.Message{Role: "user", Content: line})
 		stream, err := client.Stream(ctx, messages)
-		if err != nil { continue }
+		if err != nil {
+			continue
+		}
 
 		fmt.Print("Goshi: ")
 		var reply strings.Builder
 		for {
 			chunk, err := stream.Recv()
-			if err != nil { break }
+			if err != nil {
+				break
+			}
 			fmt.Print(chunk)
 			reply.WriteString(chunk)
 		}
@@ -139,7 +173,9 @@ func runChat(systemPrompt string) {
 				fmt.Print("Goshi (Final): ")
 				for {
 					chunk, err := stream.Recv()
-					if err != nil { break }
+					if err != nil {
+						break
+					}
 					fmt.Print(chunk)
 				}
 				fmt.Println()

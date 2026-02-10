@@ -31,6 +31,12 @@ func (r *ToolRouter) Handle(call ToolCall) any {
 				"error": "filesystem read access not granted for this session",
 			}
 		}
+	case "fs.write":
+		if !r.caps.Has(CapFSWrite) {
+			return map[string]any{
+				"error": "filesystem write access not granted for this session",
+			}
+		}
 	}
 
 	out, err := r.dispatcher.Dispatch(call.Name, runtime.ActionInput(call.Args))

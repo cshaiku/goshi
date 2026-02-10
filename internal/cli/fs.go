@@ -14,6 +14,65 @@ func newFSCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fs",
 		Short: "Local filesystem actions (safe, scoped, auditable)",
+		Long: `Safely perform scoped filesystem operations with full auditability.
+
+DESCRIPTION:
+Provides safe, scoped methods for reading, listing, writing, and applying
+changes to the local filesystem. All operations are:
+  - Scoped to the repository root (cannot escape via symlinks)
+  - Auditable (all operations are logged and can be reviewed)
+  - Reversible (write operations are stored as proposals for review)
+
+SUBCOMMANDS:
+  read      - Read a file from disk
+  list      - List contents of a directory
+  write     - Create or update a file (stores as proposal)
+  apply     - Apply a previously generated write proposal
+
+SAFETY FEATURES:
+  - Filesystem jail: Cannot read/write outside repository root
+  - Symlink protection: Symlinks are resolved safely
+  - Proposal system: Writes are proposed first, then applied manually
+  - Permission prompts: User confirms sensitive operations
+
+EXAMPLES:
+
+  1. Read a file:
+     $ goshi fs read src/main.go
+     Outputs the file contents.
+
+  2. List a directory:
+     $ goshi fs list
+     $ goshi fs list ./internal
+     Lists directory contents (default: current directory).
+
+  3. Propose a file write:
+     $ echo "new content" | goshi fs write config.txt
+     Creates a proposal for writing. Returns a proposal ID.
+
+  4. Apply a write proposal:
+     $ goshi fs apply <proposal-id>
+     Applies the proposal. Requires --yes and --dry-run=false flags.
+
+WORKFLOW EXAMPLE:
+
+  # Step 1: Propose a change
+  $ echo "version = 2.0" | goshi fs write VERSION.txt
+  Proposal ID: abc123def456
+
+  # Step 2: Review what would happen
+  $ goshi fs apply abc123def456 --dry-run
+  [dry-run] would write: VERSION.txt
+
+  # Step 3: Apply the change
+  $ goshi fs apply abc123def456 --dry-run=false --yes
+  ✔ file written successfully
+
+SEE ALSO:
+  goshi help fs read    - Read a file
+  goshi help fs list    - List a directory
+  goshi help fs write   - Write a file
+  goshi help fs apply   - Apply a write proposal`,
 	}
 
 	cmd.AddCommand(
@@ -97,12 +156,12 @@ func newFSWriteCommand() *cobra.Command {
 			}
 
 			out, err := svc.RunAction("fs.write", map[string]any{
-			  "path":    args[0],
-			  "content": string(b),
+				"path":    args[0],
+				"content": string(b),
 			})
 
 			if err != nil {
-			  return err
+				return err
 			}
 
 			return printJSON(out)

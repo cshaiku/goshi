@@ -11,3 +11,7 @@ type Stream interface {
   Recv() (string, error)
   Close() error
 }
+
+type Chunk struct {
+  Content string
+}

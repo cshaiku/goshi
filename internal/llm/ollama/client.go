@@ -20,11 +20,12 @@ type Client struct {
 // This prevents the LLM from guessing file contents and forces it to use the toolchain.
 const toolInstructions = `
 # TOOL USE
-If the user asks to list files or read a file, you MUST NOT guess the contents.
+If the user asks to list files, read a file, or write a file, you MUST NOT guess the contents.
 Instead, you MUST output a single JSON object using one of the following formats:
 
 - To list a directory: {"tool": "fs.list", "args": {"path": "."}}
 - To read a file: {"tool": "fs.read", "args": {"path": "filename.txt"}}
+- To write a file: {"tool": "fs.write", "args": {"path": "filename.txt", "content": "file contents here"}}
 
 Do not provide conversational filler when triggering a tool. 
 Output ONLY the JSON object.

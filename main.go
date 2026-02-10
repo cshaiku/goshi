@@ -1,7 +1,7 @@
 package main
 
 import (
-  "log"
+	"log"
 
   "github.com/cshaiku/goshi/internal/cli"
   "github.com/cshaiku/goshi/internal/llm"

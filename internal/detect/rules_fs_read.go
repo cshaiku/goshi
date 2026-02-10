@@ -28,3 +28,29 @@ var FSReadRules = []Rule{
 		Window: 3,
 	},
 }
+
+var FSWriteRules = []Rule{
+	{
+		Capability: CapabilityFSWrite,
+		Verbs: []string{
+			"write",
+			"create",
+			"save",
+			"update",
+			"edit",
+			"modify",
+			"patch",
+			"add",
+			"replace",
+			"overwrite",
+		},
+		Nouns: []string{
+			"file",
+			"files",
+			"path",
+			"paths",
+			"content",
+		},
+		Window: 3,
+	},
+}

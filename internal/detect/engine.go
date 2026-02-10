@@ -3,7 +3,8 @@ package detect
 type Capability string
 
 const (
-	CapabilityFSRead Capability = "fs_read"
+	CapabilityFSRead  Capability = "fs_read"
+	CapabilityFSWrite Capability = "fs_write"
 )
 
 type Rule struct {

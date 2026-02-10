@@ -16,6 +16,61 @@ func newDoctorCmd(cfg *config.Config) *cobra.Command {
 	return &cobra.Command{
 		Use:   "doctor",
 		Short: "Check environment health",
+		Long: `Diagnose environment health and identify issues.
+
+DESCRIPTION:
+This command analyzes your environment for configuration and dependency problems
+without making any changes. It checks for the availability and configuration of
+critical tools and reports any issues found, along with their severity levels.
+
+CHECKS PERFORMED:
+  - Binary availability (git, curl, jq)
+  - Basic configuration validation
+  - Environmental dependencies
+
+SEVERITY LEVELS:
+  OK      - No issues detected
+  WARN    - Warning-level issues (exit code 1)
+  ERROR   - Error-level issues (exit code 2)
+  FATAL   - Fatal issues (exit code 3)
+
+ENVIRONMENT VARIABLES:
+  GOSHI_JSON              - Output JSON format (same as --json flag)
+  GOSHI_MODEL             - LLM model to use (default: ollama)
+  GOSHI_LLM_PROVIDER      - LLM provider (default: auto)
+
+EXAMPLES:
+
+  1. Check environment health (human-readable output):
+     $ goshi doctor
+     Shows a formatted list of any detected issues with descriptions.
+
+  2. Check environment health (JSON output):
+     $ goshi doctor --json
+     Returns structured JSON with detected issues for automation.
+
+  3. Check and capture results:
+     $ goshi doctor > health_report.txt
+     $ goshi doctor --json > health_report.json
+
+OUTPUT FORMAT:
+
+  Human format shows:
+    [severity][code] message (recommended fix strategy)
+
+  JSON format includes:
+    - Issues array with code, severity, message, and strategy
+    - Allows for programmatic parsing and automation
+
+EXIT CODES:
+  0   - Healthy: No issues detected
+  1   - Warning: Non-critical issues found
+  2   - Error: Critical issues found
+  3   - Fatal: System-level problems detected
+
+SEE ALSO:
+  goshi heal              - Automatically repair detected issues
+  goshi help              - Show general help information`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			// --- detect ---
