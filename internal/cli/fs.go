@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/cshaiku/goshi/internal/app"
 	"github.com/spf13/cobra"
@@ -86,18 +87,59 @@ SEE ALSO:
 }
 
 func newFSReadCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "read <path>",
-		Short: "Read a file safely",
-		Args:  cobra.ExactArgs(1),
+		Short: "Read a file or recursively list files in a directory",
+		Long: `Read a file or generate a recursive file list.
+
+MODES:
+  - Regular file: Read contents of a single file
+  - Directory: Automatically lists all files recursively as JSON
+
+Output for directories is a JSON object with:
+  - path: The root directory scanned
+  - files: Array of relative file paths
+  - count: Total number of files found
+
+EXAMPLES:
+  $ goshi fs read src/main.go
+  Outputs file contents
+
+  $ goshi fs read ./src
+  Automatically scans recursively if src is a directory, outputs JSON:
+  {
+    "path": "/absolute/path/src",
+    "files": ["main.go", "util/helper.go", "util/test.go"],
+    "count": 3
+  }`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			svc, err := app.NewActionService(".")
 			if err != nil {
 				return err
 			}
 
+			path := args[0]
+
+			// Check if the path is a directory and auto-enable recursive listing
+			absPath, err := filepath.Abs(path)
+			if err == nil {
+				info, err := os.Stat(absPath)
+				if err == nil && info.IsDir() {
+					// Path is a directory, use recursive listing
+					out, err := svc.RunAction("fs.list-recursive", map[string]any{
+						"path": path,
+					})
+					if err != nil {
+						return err
+					}
+					return printJSON(out)
+				}
+			}
+
+			// Otherwise, read the single file
 			out, err := svc.RunAction("fs.read", map[string]any{
-				"path": args[0],
+				"path": path,
 			})
 			if err != nil {
 				return err
@@ -106,6 +148,8 @@ func newFSReadCommand() *cobra.Command {
 			return printJSON(out)
 		},
 	}
+
+	return cmd
 }
 
 func newFSListCommand() *cobra.Command {

@@ -10,6 +10,7 @@ import (
 var (
 	ErrPathOutsideRoot = errors.New("path resolves outside allowed root")
 	ErrSymlinkEscape   = errors.New("path contains symlink that escapes root")
+	ErrPathNotDir      = errors.New("path is not a directory")
 )
 
 // Guard enforces filesystem safety for local operations.

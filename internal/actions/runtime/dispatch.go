@@ -125,6 +125,23 @@ func (d *Dispatcher) Dispatch(action string, in ActionInput) (ActionOutput, erro
 			"generated_at": p.GeneratedAt,
 		}, nil
 
+	case "fs.list-recursive":
+		path, ok := in["path"].(string)
+		if !ok {
+			return nil, ErrInvalidInput
+		}
+
+		res, err := fs.ListRecursive(d.guard, path)
+		if err != nil {
+			return nil, err
+		}
+
+		return ActionOutput{
+			"path":  res.Path,
+			"files": res.Files,
+			"count": res.Count,
+		}, nil
+
 	default:
 		return nil, ErrUnknownAction
 	}
