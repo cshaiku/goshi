@@ -49,15 +49,19 @@ When calling a tool, respond with ONLY a valid JSON object in one of these exact
 
 // Client implements the llm.Backend interface for OpenAI API
 type Client struct {
-	baseURL    string
-	apiKey     string
-	model      string
-	enableSSE  bool // Phase 2: Enable streaming via SSE
-	maxRetries int  // Phase 2: Maximum retry attempts
+	baseURL        string
+	apiKey         string
+	model          string
+	enableSSE      bool            // Phase 2: Enable streaming via SSE
+	maxRetries     int             // Phase 2: Maximum retry attempts
+	httpClient     *http.Client    // Phase 3: Shared HTTP client with connection pooling
+	costTracker    *CostTracker    // Phase 3: Track API costs
+	circuitBreaker *CircuitBreaker // Phase 3: Circuit breaker for reliability
 }
 
 // New creates an OpenAI backend client
 // Loads API key from OPENAI_API_KEY environment variable
+// Phase 3: Adds connection pooling, cost tracking, and circuit breaker
 func New(model string) (*Client, error) {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
@@ -69,23 +73,54 @@ func New(model string) (*Client, error) {
 		model = "gpt-4o-mini"
 	}
 
+	// Phase 3: Create HTTP client with connection pooling
+	transport := &http.Transport{
+		MaxIdleConns:        100,              // Maximum idle connections across all hosts
+		MaxIdleConnsPerHost: 10,               // Maximum idle connections per host
+		IdleConnTimeout:     90 * time.Second, // How long idle connections are kept
+		DisableCompression:  false,
+		DisableKeepAlives:   false, // Enable keep-alives for connection reuse
+	}
+
+	httpClient := &http.Client{
+		Transport: transport,
+		Timeout:   120 * time.Second, // Overall request timeout
+	}
+
+	// Phase 3: Initialize cost tracker (warn at $1, max at $10 per session)
+	costTracker := NewCostTracker(model, 1.0, 10.0)
+
+	// Phase 3: Initialize circuit breaker (5 failures, 30s cooldown)
+	circuitBreaker := NewCircuitBreaker(5, 30*time.Second)
+
 	return &Client{
-		baseURL:    "https://api.openai.com/v1",
-		apiKey:     apiKey,
-		model:      model,
-		enableSSE:  true, // Phase 2: Enable streaming
-		maxRetries: 3,    // Phase 2: Default retry limit
+		baseURL:        "https://api.openai.com/v1",
+		apiKey:         apiKey,
+		model:          model,
+		enableSSE:      true, // Phase 2: Enable streaming
+		maxRetries:     3,    // Phase 2: Default retry limit
+		httpClient:     httpClient,
+		costTracker:    costTracker,
+		circuitBreaker: circuitBreaker,
 	}, nil
 }
 
 // Stream sends a request to OpenAI and returns a streaming response
 // Phase 2: Supports SSE streaming and retry logic with exponential backoff
+// Phase 3: Integrates circuit breaker for reliability
 func (c *Client) Stream(
 	ctx context.Context,
 	system string,
 	messages []llm.Message,
 ) (llm.Stream, error) {
 	var lastErr error
+
+	// Phase 3: Check circuit breaker before any attempts
+	if !c.circuitBreaker.AllowRequest() {
+		stats := c.circuitBreaker.GetStats()
+		return nil, fmt.Errorf("circuit breaker is open: too many failures (state: %s, failures: %d, retry in: %s)",
+			stats.State, stats.Failures, stats.TimeUntilHalfOpen.Round(time.Second))
+	}
 
 	// Retry loop with exponential backoff
 	for attempt := 0; attempt <= c.maxRetries; attempt++ {
@@ -105,6 +140,7 @@ func (c *Client) Stream(
 		stream, err := c.doStream(ctx, system, messages)
 		if err != nil {
 			lastErr = err
+			c.circuitBreaker.RecordFailure() // Phase 3: Track failures
 
 			// Check if error is retryable
 			if apiErr, ok := err.(*APIError); ok {
@@ -118,7 +154,8 @@ func (c *Client) Stream(
 			return nil, err
 		}
 
-		// Success
+		// Success - record and return
+		c.circuitBreaker.RecordSuccess() // Phase 3: Track success
 		return stream, nil
 	}
 
@@ -176,8 +213,8 @@ func (c *Client) doStream(
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+c.apiKey)
 
-	// Send request
-	resp, err := http.DefaultClient.Do(req)
+	// Phase 3: Use pooled HTTP client instead of default
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("OpenAI API request failed: %w\n\nPossible causes:\n  - Network connectivity issues\n  - OpenAI API is down\n  - Firewall blocking https://api.openai.com", err)
 	}
@@ -190,8 +227,9 @@ func (c *Client) doStream(
 	}
 
 	// Phase 2: Return SSE stream if enabled
+	// Phase 3: Pass cost tracker and model for usage tracking
 	if c.enableSSE {
-		return newSSEStream(resp.Body), nil
+		return newSSEStream(resp.Body, c.costTracker, c.model), nil
 	}
 
 	// Fallback: Parse non-streaming response
@@ -253,4 +291,36 @@ func (s *simpleStream) Recv() (string, error) {
 
 func (s *simpleStream) Close() error {
 	return nil
+}
+
+// Phase 3: Utility methods for cost monitoring and circuit breaker management
+
+// GetCostSummary returns a summary of API costs for this session
+func (c *Client) GetCostSummary() CostSummary {
+	if c.costTracker == nil {
+		return CostSummary{}
+	}
+	return c.costTracker.GetSummary()
+}
+
+// GetCircuitState returns the current circuit breaker state
+func (c *Client) GetCircuitState() CircuitBreakerStats {
+	if c.circuitBreaker == nil {
+		return CircuitBreakerStats{State: StateClosed}
+	}
+	return c.circuitBreaker.GetStats()
+}
+
+// ResetCostTracker resets the cost tracking for a new session
+func (c *Client) ResetCostTracker() {
+	if c.costTracker != nil {
+		c.costTracker.Reset()
+	}
+}
+
+// ResetCircuitBreaker manually resets the circuit breaker to closed state
+func (c *Client) ResetCircuitBreaker() {
+	if c.circuitBreaker != nil {
+		c.circuitBreaker.Reset()
+	}
 }
