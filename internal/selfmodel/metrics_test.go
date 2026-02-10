@@ -1,5 +1,4 @@
 package selfmodel
-package selfmodel
 
 import (
 	"testing"
