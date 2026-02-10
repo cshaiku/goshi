@@ -177,7 +177,7 @@ This workflow is applicable for:
 
 - [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - [goshi CHANGELOG.md](../../CHANGELOG.md) — Example implementation
-- [goshi LLM Integration Documentation](../../PHASES_COMPLETE.md) — Source material
+- [goshi LLM Integration Documentation](project-phases/llm-integration-phases-complete.md) — Internal project completion tracking
 
 ---
 

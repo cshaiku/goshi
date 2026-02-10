@@ -27,7 +27,7 @@ All notable changes to goshi are documented in this file. The format is based on
 - **README.md Enhancements** — New LLM Integration Architecture section with tool registry, permission model, and chat session documentation
 - **MIGRATION.md** — Comprehensive upgrade guide with step-by-step migration instructions, breaking changes, and troubleshooting
 - **LLM_INTEGRATION.md** — Quick reference guide with code examples, tool documentation, and usage patterns
-- **PHASES_COMPLETE.md** — Detailed completion summary of all 5 LLM integration phases with test breakdown and achievements
+- **Internal Phase Documentation** — Detailed completion summary of all 5 LLM integration phases (internal tracking, see docs/ai-patterns/project-phases/)
 
 ### Added - CLI Enhancements (Feb 10, 2026)
 
@@ -119,4 +119,4 @@ goshi is designed as a constrained, local-first model of AI-assisted tooling wit
 - All dates reflect development date (2026-02-10)
 - Semantic versioning: [MAJOR.MINOR.PATCH]
 - See git log for detailed commit history
-- See individual phase documentation files (MIGRATION.md, LLM_INTEGRATION.md, PHASES_COMPLETE.md) for technical details
+- See migration guides: [MIGRATION.md](MIGRATION.md) for upgrade instructions, [LLM_INTEGRATION.md](LLM_INTEGRATION.md) for quick reference
