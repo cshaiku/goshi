@@ -6,6 +6,35 @@ All notable changes to goshi are documented in this file. The format is based on
 
 ## [1.0.0] - 2026-02-10
 
+### Added - OpenAI Backend Integration (Feb 10, 2026)
+
+#### Phase 1: MVP OpenAI Backend Support
+- **OpenAI API Client** — Full OpenAI chat completions API integration with streaming support
+- **Environment Configuration** — API key management via `OPENAI_API_KEY` environment variable
+- **Model Selection** — Support for all OpenAI models (default: gpt-4o-mini)
+- **Tool Calling Integration** — Structured JSON tool instructions compatible with OpenAI format
+- **Error Handling** — HTTP error handling with descriptive user messages
+
+#### Phase 2: Production-Ready Features
+- **SSE Streaming** — Server-Sent Events streaming for real-time response delivery
+- **Retry Logic** — Exponential backoff with configurable retry attempts (default: 3 retries)
+- **Retryable Error Detection** — Smart classification of transient vs permanent API errors (429, 500, 502, 503, 504)
+- **Request/Response Logging** — Comprehensive error logging with retry attempt tracking
+
+#### Phase 3: Optimization Features
+- **Connection Pooling** — HTTP client with MaxIdleConns (100) and keep-alive support for connection reuse
+- **Cost Tracking** — Per-model token usage tracking with configurable warning ($1) and max ($10) thresholds
+- **Circuit Breaker** — Fault tolerance with automatic failure detection (5 failures) and 30s cooldown
+- **Performance Logging** — Real-time cost and token usage reporting per request
+
+#### OpenAI Test Suite
+- **68 Comprehensive Tests** covering all Phase 3 components with 100% pass rate
+- **Cost Tracker Tests** (14 tests) — Usage recording, warning thresholds, cost limits, concurrent access, per-model pricing
+- **Circuit Breaker Tests** (21 tests) — State transitions (Closed → Open → Half-Open), recovery logic, concurrent access
+- **Error Handling Tests** (10 tests) — Retryable error codes, exponential backoff calculation, HTTP error handling
+- **SSE Streaming Tests** (14 tests) — Chunk parsing, usage data extraction, finish reasons, malformed JSON handling
+- **Tool Conversion Tests** (20 tests) — OpenAI format conversion, schema validation, complex nested structures
+
 ### Added - LLM Integration Refactoring (Feb 10, 2026)
 
 #### Phase 1-3: Core LLM Architecture (Feb 10)
@@ -23,8 +52,26 @@ All notable changes to goshi are documented in this file. The format is based on
 - **End-to-End Validation** — Full 6-phase flow testing with permission enforcement, schema validation, and audit trail verification
 - Test coverage across tool execution, permission denial scenarios, schema validation, structured response parsing, and message history
 
-#### Phase 5: Documentation (Feb 10)
-- **README.md Enhancements** — New LLM Integration Architecture section with tool registry, permission model, and chat session documentation
+- **OpenAI Backend Tests** (68 tests) — Cost tracking, circuit breaker, error handling, SSE streaming, tool conversion
+
+**Total: 233+ tests (100% passing)**
+
+### Changed - Code Quality Improvements (Feb 10, 2026)
+
+#### SOLID Principles Refactoring
+- **Dependency Inversion Principle (DIP)** — Extracted `BackendFactory` to decouple CLI from concrete LLM implementations (ollama, openai)
+- **Single Responsibility Principle (SRP)** — Extracted `PermissionHandler` to isolate permission request logic from main chat loop
+- **Open/Closed Principle (OCP)** — New LLM backends can be added to factory without modifying existing chat logic
+- **Magic Strings Elimination** — Moved ANSI color codes to `DisplayConfig` with centralized constants and optional color support
+- **God Object Reduction** — Simplified `runChat()` by 65 lines through delegation to specialized handlers
+
+#### New Abstractions
+- **`internal/cli/backend_factory.go`** — Factory pattern for LLM backend instantiation (54 lines)
+- **`internal/cli/display.go`** — Display configuration and color management (29 lines)
+- **`internal/cli/permission_handler.go`** — Permission request logic encapsulation (66 lines)
+
+#### Bug Fixes
+- **Duplicate Package Declarations** — Fixed syntax errors in `internal/repair/basic_test.go` and `internal/selfmodel/metrics_test.go`LM Integration Architecture section with tool registry, permission model, and chat session documentation
 - **MIGRATION.md** — Comprehensive upgrade guide with step-by-step migration instructions, breaking changes, and troubleshooting
 - **LLM_INTEGRATION.md** — Quick reference guide with code examples, tool documentation, and usage patterns
 - **Internal Phase Documentation** — Detailed completion summary of all 5 LLM integration phases (internal tracking, see docs/ai-patterns/project-phases/)
@@ -70,7 +117,8 @@ All notable changes to goshi are documented in this file. The format is based on
 ### Metadata
 
 - **Build Status** — ✅ All passing
-- **Test Coverage** — 165+ tests across 15+ packages
+- **Test Coverage** — 233+ tests across 15+ packages
+- **LLM Backends** — Ollama (local), OpenAI (cloud)
 - **Deployment Ready** — Yes
 - **Breaking Changes** — Documented in MIGRATION.md
 

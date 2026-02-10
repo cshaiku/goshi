@@ -1,5 +1,4 @@
 package repair
-package repair
 
 import (
 	"testing"

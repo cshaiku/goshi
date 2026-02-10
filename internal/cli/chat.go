@@ -11,33 +11,26 @@ import (
 	"github.com/cshaiku/goshi/internal/config"
 	"github.com/cshaiku/goshi/internal/detect"
 	"github.com/cshaiku/goshi/internal/llm"
-	"github.com/cshaiku/goshi/internal/llm/ollama"
-	"github.com/cshaiku/goshi/internal/llm/openai"
 	"github.com/cshaiku/goshi/internal/selfmodel"
 )
 
-const (
-	colorReset  = "\033[0m"
-	colorGreen  = "\033[32m"
-	colorYellow = "\033[33m"
-)
-
 func printStatus(systemPrompt string, perms *Permissions) {
+	display := DefaultDisplayConfig()
 	metrics := selfmodel.ComputeLawMetrics(systemPrompt)
 	label := "ENFORCEMENT STAGED"
-	color := colorYellow
+	color := ColorYellow
 	if perms.FSRead && perms.FSWrite {
 		label = "ENFORCEMENT ACTIVE (FS_READ + FS_WRITE)"
-		color = colorGreen
+		color = ColorGreen
 	} else if perms.FSRead {
 		label = "ENFORCEMENT ACTIVE (FS_READ)"
-		color = colorGreen
+		color = ColorGreen
 	} else if perms.FSWrite {
 		label = "ENFORCEMENT ACTIVE (FS_WRITE)"
-		color = colorGreen
+		color = ColorGreen
 	}
-	fmt.Printf("Self-Model Law Index: %d lines · %d constraints · %s%s%s\n",
-		metrics.RuleLines, metrics.ConstraintCount, color, label, colorReset)
+	fmt.Printf("Self-Model Law Index: %d lines · %d constraints · %s\n",
+		metrics.RuleLines, metrics.ConstraintCount, display.Colorize(label, color))
 	if laws := selfmodel.ExtractPrimaryLaws(systemPrompt); len(laws) > 0 {
 		fmt.Printf("Primary Laws: %s\n", strings.Join(laws, " · "))
 	}
@@ -47,35 +40,16 @@ func printStatus(systemPrompt string, perms *Permissions) {
 	fmt.Println("-----------------------------------------------------")
 }
 
-func refuseFSRead() {
-	fmt.Println("Filesystem access denied.\nPermission was not granted for this session.")
-	fmt.Println("-----------------------------------------------------")
-}
-
-func refuseFSWrite() {
-	fmt.Println("Filesystem write access denied.\nPermission was not granted for this session.")
-	fmt.Println("-----------------------------------------------------")
-}
-
 func runChat(systemPrompt string) {
 	cfg := config.Load()
 	ctx := context.Background()
 
-	// Initialize LLM backend
-	var backend llm.Backend
-	var err error
-
-	if cfg.LLMProvider == "ollama" || cfg.LLMProvider == "" || cfg.LLMProvider == "auto" {
-		backend = ollama.New(cfg.Model)
-	} else if cfg.LLMProvider == "openai" {
-		backend, err = openai.New(cfg.Model)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to initialize OpenAI backend: %v\n", err)
-			return
-		}
-	} else {
-		fmt.Fprintf(os.Stderr, "unsupported LLM provider: %s\n", cfg.LLMProvider)
-		fmt.Fprintf(os.Stderr, "supported providers: ollama, openai\n")
+	// Initialize LLM backend using factory (Dependency Inversion Principle)
+	factory := NewBackendFactory(cfg.LLMProvider, cfg.Model)
+	backend, err := factory.Create()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to initialize LLM backend: %v\n", err)
+		fmt.Fprintf(os.Stderr, "supported providers: %s\n", strings.Join(SupportedProviders(), ", "))
 		return
 	}
 
@@ -88,6 +62,7 @@ func runChat(systemPrompt string) {
 
 	printStatus(systemPrompt, session.Permissions)
 	reader := bufio.NewReader(os.Stdin)
+	permHandler := NewPermissionHandler(session.WorkingDir, DefaultDisplayConfig())
 
 	for {
 		fmt.Print("You: ")
@@ -100,36 +75,13 @@ func runChat(systemPrompt string) {
 		// PHASE 1: Listen - Record user input
 		session.AddUserMessage(line)
 
-		// PHASE 2: Detect intent - Check for implicit capability requests via regex
+		// PHASE 2: Detect intent - Check for implicit capability requests
 		// This is a transition mechanism; eventually LLM should handle all intent
 		detected := detect.DetectCapabilities(line, detect.FSReadRules)
 		detected = append(detected, detect.DetectCapabilities(line, detect.FSWriteRules)...)
 
-		permissionDenied := false
-		for _, cap := range detected {
-			if cap == detect.CapabilityFSRead && !session.HasPermission("FS_READ") {
-				if !RequestFSReadPermission(session.WorkingDir) {
-					refuseFSRead()
-					permissionDenied = true
-					session.DenyPermission("FS_READ")
-					break
-				}
-				session.GrantPermission("FS_READ")
-				printStatus(systemPrompt, session.Permissions)
-			}
-			if cap == detect.CapabilityFSWrite && !session.HasPermission("FS_WRITE") {
-				if !RequestFSWritePermission(session.WorkingDir) {
-					refuseFSWrite()
-					permissionDenied = true
-					session.DenyPermission("FS_WRITE")
-					break
-				}
-				session.GrantPermission("FS_WRITE")
-				printStatus(systemPrompt, session.Permissions)
-			}
-		}
-
-		if permissionDenied {
+		// Handle permissions using extracted handler (Single Responsibility)
+		if !permHandler.HandleDetected(detected, session, systemPrompt) {
 			continue
 		}
 
