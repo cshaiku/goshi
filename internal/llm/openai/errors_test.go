@@ -80,7 +80,7 @@ func TestCalculateBackoff_IncludesJitter(t *testing.T) {
 	expectedBase := 4 * time.Second
 	minExpected := expectedBase * 75 / 100  // 3s
 	maxExpected := expectedBase * 125 / 100 // 5s
-	
+
 	if delay < minExpected || delay > maxExpected {
 		t.Errorf("delay=%v outside expected range %v-%v", delay, minExpected, maxExpected)
 	}
