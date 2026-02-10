@@ -13,6 +13,10 @@ type Permissions struct {
 }
 
 func RequestFSReadPermission(cwd string) bool {
+	cfg := GetConfig()
+	if cfg.Safety.AutoConfirmPermissions {
+		return true
+	}
 	items := []string{
 		"Allow read-only access (this session)",
 		"Deny",
@@ -44,6 +48,10 @@ func RequestFSReadPermission(cwd string) bool {
 }
 
 func RequestFSWritePermission(cwd string) bool {
+	cfg := GetConfig()
+	if cfg.Safety.AutoConfirmPermissions {
+		return true
+	}
 	items := []string{
 		"Allow write access (this session)",
 		"Deny",

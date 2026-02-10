@@ -10,6 +10,9 @@ import (
 
 var runtime *Runtime
 
+// globalConfig holds the loaded config for access throughout CLI
+var globalConfig *config.Config
+
 var rootCmd = &cobra.Command{
 	Use:   "goshi",
 	Short: "Goshi is a local-first protective CLI agent",
@@ -30,9 +33,19 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+// GetConfig returns the globally loaded config
+func GetConfig() *config.Config {
+	if globalConfig == nil {
+		cfg := config.Load()
+		globalConfig = &cfg
+	}
+	return globalConfig
+}
+
 func Execute(rt *Runtime) {
 	runtime = rt
 	cfg := config.Load()
+	globalConfig = &cfg
 
 	// Register all subcommands
 	rootCmd.AddCommand(
