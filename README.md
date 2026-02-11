@@ -546,7 +546,7 @@ git clone https://github.com/cshaiku/goshi.git
 cd goshi
 go mod download
 make build
-./bin/goshi --help
+./goshi --help
 ```
 
 **SSH**
@@ -555,7 +555,7 @@ git clone git@github.com:cshaiku/goshi.git
 cd goshi
 go mod download
 make build
-./bin/goshi --help
+./goshi --help
 ```
 
 **GitHub CLI**
@@ -564,7 +564,7 @@ gh repo clone cshaiku/goshi
 cd goshi
 go mod download
 make build
-./bin/goshi --help
+./goshi --help
 ```
 
 Want to contribute? Fork the repo on GitHub, then replace `cshaiku/goshi` with your fork URL.

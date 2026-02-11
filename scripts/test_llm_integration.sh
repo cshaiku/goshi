@@ -12,7 +12,7 @@ echo ""
 
 # Build the project
 echo "[1/4] Building goshi..."
-go build -o bin/goshi . 2>&1 | grep -v "^go:" || true
+go build -o goshi . 2>&1 | grep -v "^go:" || true
 
 # Check Ollama
 echo ""
@@ -45,12 +45,12 @@ echo "=== Testing Goshi Headless Mode ==="
 echo ""
 echo "Prompt 1: 'hello, what are you?'"
 echo "---"
-echo "hello, what are you?" | timeout 30 bin/goshi --headless 2>&1 | grep -A 5 "Goshi:" | head -10 || echo "[Response truncated or timeout]"
+echo "hello, what are you?" | timeout 30 ./goshi --headless 2>&1 | grep -A 5 "Goshi:" | head -10 || echo "[Response truncated or timeout]"
 echo ""
 
 echo "Prompt 2: 'List the files in this folder.'"
 echo "---"
-echo "List the files in this folder." | timeout 30 bin/goshi --headless 2>&1 | grep -A 5 "Goshi:" | head -10 || echo "[Response truncated or timeout]"
+echo "List the files in this folder." | timeout 30 ./goshi --headless 2>&1 | grep -A 5 "Goshi:" | head -10 || echo "[Response truncated or timeout]"
 echo ""
 
 echo "=================================="

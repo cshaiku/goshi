@@ -12,7 +12,7 @@ echo ""
 
 # Build
 echo "[1/4] Building goshi..."
-go build -o bin/goshi . 2>&1 | grep -i error || echo "  ✓ Build successful"
+go build -o goshi . 2>&1 | grep -i error || echo "  ✓ Build successful"
 echo ""
 
 # Check Ollama
@@ -28,7 +28,7 @@ echo ""
 
 # Show config
 echo "[3/4] Verifying configuration..."
-CONFIG=$(./bin/goshi config show 2>&1 | jq '.LLM.Model' 2>/dev/null | tr -d '"')
+CONFIG=$(./goshi config show 2>&1 | jq '.LLM.Model' 2>/dev/null | tr -d '"')
 if [ "$CONFIG" = "qwen3:8b-q8_0" ]; then
     echo "  ✓ Default model: qwen3:8b-q8_0"
 else
@@ -56,7 +56,7 @@ timeout 30s bash -c '
     echo "hello, what are you?"
     sleep 15
     echo "q"
-) | ./bin/goshi --headless 2>&1
+) | ./goshi --headless 2>&1
 ' > "$TEST_OUTPUT" 2>&1 || true
 
 # Extract response (skip header lines)
@@ -88,7 +88,7 @@ timeout 30s bash -c '
     echo "List the files in this folder."
     sleep 15
     echo "q"
-) | ./bin/goshi --headless 2>&1
+) | ./goshi --headless 2>&1
 ' > "$TEST_OUTPUT" 2>&1 || true
 
 # Extract response

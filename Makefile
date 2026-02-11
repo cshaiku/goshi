@@ -3,8 +3,6 @@
 # ------------------------------------------------------------------------------
 
 APP_NAME := goshi
-BIN_DIR  := bin
-BIN_PATH := $(BIN_DIR)/$(APP_NAME)
 
 GO       := go
 GOFLAGS  :=
@@ -22,12 +20,6 @@ all: build
 
 .PHONY: build
 build:
-	@mkdir -p $(BIN_DIR)
-	$(GO) build $(GOFLAGS) -o $(BIN_PATH)
-
-# Build directly to repo root (local dev convenience)
-.PHONY: build-local
-build-local:
 	$(GO) build $(GOFLAGS) -o $(APP_NAME)
 
 # ------------------------------------------------------------------------------
@@ -36,7 +28,7 @@ build-local:
 
 .PHONY: run
 run: build
-	./$(BIN_PATH)
+	./$(APP_NAME)
 
 # ------------------------------------------------------------------------------
 # Test / Verify
@@ -60,7 +52,6 @@ fmt:
 
 .PHONY: clean
 clean:
-	rm -rf $(BIN_DIR)
 	rm -f $(APP_NAME)
 
 # ------------------------------------------------------------------------------
@@ -89,8 +80,7 @@ check-dirty:
 .PHONY: help
 help:
 	@echo "Targets:"
-	@echo "  build         Build binary to ./bin/goshi"
-	@echo "  build-local   Build binary to ./goshi (local only)"
+	@echo "  build         Build binary to ./goshi"
 	@echo "  run           Build and run"
 	@echo "  test          Run tests"
 	@echo "  vet           Run go vet"
