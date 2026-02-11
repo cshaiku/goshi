@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -61,12 +62,12 @@ func TestWindowSizeUpdate(t *testing.T) {
 	updatedModel, _ := m.Update(msg)
 	updated := updatedModel.(model)
 
-	if updated.width != 100 {
-		t.Errorf("expected width 100, got %d", updated.width)
+	if updated.layout.TerminalWidth != 100 {
+		t.Errorf("expected terminal width 100, got %d", updated.layout.TerminalWidth)
 	}
 
-	if updated.height != 40 {
-		t.Errorf("expected height 40, got %d", updated.height)
+	if updated.layout.TerminalHeight != 40 {
+		t.Errorf("expected terminal height 40, got %d", updated.layout.TerminalHeight)
 	}
 
 	if !updated.ready {
@@ -74,19 +75,22 @@ func TestWindowSizeUpdate(t *testing.T) {
 	}
 }
 
-func TestRenderHeader(t *testing.T) {
+func TestStatusBar(t *testing.T) {
 	systemPrompt := "Test system"
 	m := newModel(systemPrompt, nil)
 	m.ready = true
 
-	header := m.renderHeader()
+	// Trigger window size to initialize layout
+	m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 
-	if header == "" {
-		t.Error("expected non-empty header")
+	view := m.View()
+
+	if view == "" {
+		t.Error("expected non-empty view")
 	}
 
-	if !strings.Contains(header, "GOSHI TUI") {
-		t.Error("expected header to contain 'GOSHI TUI'")
+	if !strings.Contains(view, "goshi") {
+		t.Error("expected view to contain 'goshi'")
 	}
 }
 
@@ -229,5 +233,180 @@ func TestToolExecutionError(t *testing.T) {
 
 	if !strings.Contains(updated.messages[0].Content, "permission denied") {
 		t.Error("expected message to contain error")
+	}
+}
+
+// Phase 1: Layout and Infrastructure Tests
+
+func TestLayoutCalculations(t *testing.T) {
+	layout := NewLayout()
+	layout.Recalculate(100, 40)
+
+	if layout.TerminalWidth != 100 {
+		t.Errorf("expected terminal width 100, got %d", layout.TerminalWidth)
+	}
+
+	if layout.TerminalHeight != 40 {
+		t.Errorf("expected terminal height 40, got %d", layout.TerminalHeight)
+	}
+
+	// Check split ratio (70/30)
+	expectedOutput := int(float64(100) * 0.70)
+	if layout.OutputStreamWidth != expectedOutput {
+		t.Errorf("expected output width %d, got %d", expectedOutput, layout.OutputStreamWidth)
+	}
+
+	expectedPanel := 100 - expectedOutput
+	if layout.InspectPanelWidth != expectedPanel {
+		t.Errorf("expected panel width %d, got %d", expectedPanel, layout.InspectPanelWidth)
+	}
+}
+
+func TestLayoutMinimumSize(t *testing.T) {
+	layout := NewLayout()
+	minWidth, minHeight := layout.MinimumSize()
+
+	if minWidth != 80 || minHeight != 24 {
+		t.Errorf("expected minimum size (80, 24), got (%d, %d)", minWidth, minHeight)
+	}
+}
+
+func TestTelemetryRecordRequest(t *testing.T) {
+	telemetry := NewTelemetry()
+
+	latency := 100 * time.Millisecond
+	telemetry.RecordRequest(latency, 500, 0.05)
+
+	if telemetry.LastLatency.Milliseconds() != 100 {
+		t.Errorf("expected latency 100ms, got %dms", telemetry.LastLatency.Milliseconds())
+	}
+
+	if telemetry.TokensUsed != 500 {
+		t.Errorf("expected tokens used 500, got %d", telemetry.TokensUsed)
+	}
+
+	if telemetry.SessionCost != 0.05 {
+		t.Errorf("expected session cost 0.05, got %f", telemetry.SessionCost)
+	}
+
+	if telemetry.RequestCount != 1 {
+		t.Errorf("expected request count 1, got %d", telemetry.RequestCount)
+	}
+}
+
+func TestTelemetryMemoryTracking(t *testing.T) {
+	telemetry := NewTelemetry()
+	telemetry.UpdateMemory(42)
+
+	if telemetry.MemoryEntries != 42 {
+		t.Errorf("expected memory entries 42, got %d", telemetry.MemoryEntries)
+	}
+}
+
+func TestStatusBarRender(t *testing.T) {
+	telemetry := NewTelemetry()
+	telemetry.Backend = "ollama"
+	telemetry.ModelName = "test-model"
+
+	statusBar := NewStatusBar(telemetry)
+	statusBar.UpdateMetrics(312, 9)
+
+	rendered := statusBar.Render(100)
+
+	if rendered == "" {
+		t.Error("expected non-empty status bar")
+	}
+
+	if !strings.Contains(rendered, "goshi") {
+		t.Error("expected status bar to contain 'goshi'")
+	}
+
+	if !strings.Contains(rendered, "Laws: 312") {
+		t.Error("expected status bar to contain law count")
+	}
+
+	if !strings.Contains(rendered, "C: 9") {
+		t.Error("expected status bar to contain constraint count")
+	}
+
+	if !strings.Contains(rendered, "ollama") {
+		t.Error("expected status bar to contain backend name")
+	}
+
+	if !strings.Contains(rendered, "test-model") {
+		t.Error("expected status bar to contain model name")
+	}
+}
+
+func TestInspectPanelStub(t *testing.T) {
+	panel := NewInspectPanel()
+	panel.SetSize(30, 20)
+
+	rendered := panel.Render()
+
+	if rendered == "" {
+		t.Error("expected non-empty inspect panel")
+	}
+
+	if !strings.Contains(rendered, "INSPECT PANEL") {
+		t.Error("expected panel to contain header")
+	}
+
+	if !strings.Contains(rendered, "Phase 2") {
+		t.Error("expected panel to indicate Phase 2 placeholder")
+	}
+}
+
+func TestFocusCycling(t *testing.T) {
+	m := newModel("test", nil)
+	m.ready = true
+
+	// Initial focus should be on input
+	if m.focusedRegion != FocusInput {
+		t.Errorf("expected initial focus on input, got %d", m.focusedRegion)
+	}
+
+	// Pressing Tab should cycle forward
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyTab})
+	m = updated.(model)
+
+	if m.focusedRegion != FocusOutputStream {
+		t.Errorf("expected focus on output stream after Tab, got %d", m.focusedRegion)
+	}
+
+	// Pressing Tab again
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyTab})
+	m = updated.(model)
+
+	if m.focusedRegion != FocusInspectPanel {
+		t.Errorf("expected focus on inspect panel after second Tab, got %d", m.focusedRegion)
+	}
+
+	// Pressing Tab again should wrap back to input
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyTab})
+	m = updated.(model)
+
+	if m.focusedRegion != FocusInput {
+		t.Errorf("expected focus to wrap back to input, got %d", m.focusedRegion)
+	}
+}
+
+func TestComponentsInitialized(t *testing.T) {
+	m := newModel("test", nil)
+
+	if m.layout == nil {
+		t.Error("expected layout to be initialized")
+	}
+
+	if m.telemetry == nil {
+		t.Error("expected telemetry to be initialized")
+	}
+
+	if m.statusBar == nil {
+		t.Error("expected status bar to be initialized")
+	}
+
+	if m.inspectPanel == nil {
+		t.Error("expected inspect panel to be initialized")
 	}
 }
