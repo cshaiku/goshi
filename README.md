@@ -20,24 +20,57 @@ Run `goshi` or `goshi chat` to launch an interactive Text User Interface:
 ./goshi
 ```
 
+**Layout (v2.0):**
+- **Left Region (70%)** — Output stream with message history
+- **Right Region (30%)** — Inspect panel with 4 sections:
+  - **Memory** — Entry count, usage bar, scope
+  - **Prompt Info** — Policy hash, temperature
+  - **Guardrails** — Mode (ON/OFF), law/constraint counts
+  - **Capabilities** — Tools, filesystem, network permissions
+- **Status Bar (2 lines)** — Telemetry: latency, tokens, cost, memory, guardrails, LLM model
+- **Input Area** — Message composer with mode and toggles display
+
 **Features:**
 - Real-time LLM streaming with visual feedback
-- Scrollable message history (viewport)
+- Scrollable message history (viewport with Up/Down arrows)
+- Role-identified messages (USER: / ASSISTANT: / SYSTEM: / TOOL:) in distinct colors
 - Tool execution with status indicators (✓ success, ✗ error)
-- Law metrics displayed in header (rules, constraints, enforcement)
-- Multi-line input with textarea
+- Collapsible code blocks (auto-collapse if >5 lines)
+- Law metrics displayed in status bar
+- Multi-line input with mode/toggle indicators
 
 **Keyboard Controls:**
-- `Ctrl+S` or `Enter` — Send message
-- `Ctrl+C` or `Esc` — Quit
-- `↑/↓` — Scroll through message history
-- `PgUp/PgDn` — Page through history
+- **Navigation**
+  - `Tab` / `Shift+Tab` — Cycle focus (output → inspect panel → input)
+  - `↑/↓` or `PgUp/PgDn` — Scroll focused region
+- **Actions**
+  - `Ctrl+S` or `Enter` — Send message
+  - `Ctrl+M` — Cycle mode (Chat → Command → Diff)
+  - `Ctrl+D` — Toggle Dry Run
+  - `Ctrl+T` — Toggle Deterministic
+  - `Ctrl+C` or `Esc` — Quit
+- **Message Modes**
+  - **Chat** — Conversational interaction
+  - **Command** — Imperative task execution
+  - **Diff** — Comparison/analysis mode
+
+**Execution Modifiers:**
+- **Dry Run** — Preview execution without making changes (✓ on / ○ off)
+- **Deterministic** — Reproducible output, no random choices (✓ on / ○ off)
 
 **Status Indicators:**
 - `●` — Waiting for LLM response
 - `▊` — Streaming in progress
 - `✓` — Tool executed successfully
 - `✗` — Tool execution failed
+- `(focused)` — Currently focused region
+
+**Accessibility:**
+- Full keyboard-only operation
+- Screen reader compatible
+- Role descriptions in natural language
+- Focus indicators on all regions
+- All shortcuts documented in TUI
 
 ### Headless/CLI Mode
 

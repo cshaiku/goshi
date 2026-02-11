@@ -11,6 +11,77 @@ All notable changes to goshi are documented in this file. The format is based on
 
 ---
 
+## [1.2.0] - 2026-02-10
+
+### Added - TUI v2.0 Input & Output Enhancements
+
+#### Phase 1: Core Layout Infrastructure
+- **Three-Region Layout** — Responsive 70/30 split (output stream | inspect panel) with status bar and input area
+- **Layout Calculator** — Automatic dimension calculations with minimum size validation (80x24)
+- **Telemetry Tracking** — Real-time metrics for latency, tokens, cost, memory, and message counts
+- **Status Bar** — Two-line display with comprehensive system information
+  - Line 1: "goshi │ Laws │ Constraints│ Status │ Tokens │ Temperature │ Memory"
+  - Line 2: "Latency │ Cost │ Guardrails │ LLM │ Model"
+- **Keyboard Navigation** — Tab/Shift+Tab to cycle between output stream, inspect panel, and input
+- **Responsive Resize** — Automatic recalculation on window size changes (WindowSizeMsg)
+
+#### Phase 2: Inspect Panel Implementation
+- **Four-Section Panel** — Right-side inspection panel with scrollable viewport
+  - **Memory Section** — Entry count (0-128), usage bar, percentage, scope display
+  - **Prompt Info Section** — SHA256 policy hash (6 hex chars), temperature setting
+  - **Guardrails Section** — ON/OFF mode with color coding, law count, constraint count
+  - **Capabilities Section** — Tools (enabled/disabled), filesystem (allowed/denied/read-only), network (denied/restricted)
+- **Capability Tracking** — Real-time sync with chat session permissions (FSRead/FSWrite)
+- **Scrolling Support** — Viewport integration for content overflow with Up/Down/PageUp/PageDown
+- **Focus-Aware Navigation** — Scroll events only route to focused region to avoid conflicts
+
+#### Phase 3: Input & Output Enhancements
+- **Role Identifiers** — Clear prefixes for message sources (USER:/ASSISTANT:/SYSTEM:/TOOL:)
+  - Distinct colors: USER (yellow), ASSISTANT (cyan), SYSTEM (orange), TOOL (magenta)
+  - Bold role labels for visual distinction
+- **Mode Selector** — Three operational modes with Ctrl+M cycling
+  - Chat mode (conversational)
+  - Command mode (imperative)
+  - Diff mode (comparison/analysis)
+- **Input Toggles** — Independent execution modifiers
+  - Dry Run (✓/○ indicator, Ctrl+D) — Preview without execution
+  - Deterministic (✓/○ indicator, Ctrl+T) — Reproducible execution
+- **Collapsible Code Blocks** — Smart code display management
+  - Auto-detect markdown code fences (```...)
+  - Auto-collapse blocks >5 lines
+  - Header: "📦 Code Block [language] (N lines) - Press 'C' to expand/collapse"
+- **Screen Reader Accessibility** — Full keyboard-only navigation support
+  - Role descriptions in natural language
+  - Accessibility info for all UI components
+  - Focus indicators showing active region
+  - Complete keyboard shortcut documentation
+
+### Changed - TUI Architecture
+- **Input Region** — Enhanced header with mode and toggle display
+- **Message Rendering** — Switch statement handling all 4 role types
+- **Styling** — Added systemStyle and toolStyle for new message types, roleStyle for identifiers
+
+### Testing
+- **New Tests** — 40 total TUI tests (+16 Phase 3 tests)
+  - 3 role identifier tests
+  - 3 mode selector tests
+  - 3 input toggle tests
+  - 4 code block tests
+  - 4 accessibility tests
+- **Total Project Tests** — 263 passing (231 → 263)
+- **Build Status** — Clean, no warnings or errors
+
+### Breaking Changes
+- None — Backward compatible with existing TUI v1.1.0
+
+### Metadata
+- **TUI Framework** — Bubble Tea (Elm Architecture pattern)
+- **Styling** — Lipgloss v1.1.0 for terminal styling
+- **Widgets** — Bubbles v1.0.0 for viewport and textarea
+- **Version** — 1.2.0
+
+---
+
 ## [1.1.0] - 2026-02-10
 
 ### Added - Text User Interface (TUI)
