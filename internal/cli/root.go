@@ -132,6 +132,7 @@ func Execute(rt *Runtime) {
 		newDoctorCmd(&cfg),
 		newHealCmd(&cfg),
 		newConfigCommand(),
+		newVersionCmd(),
 	)
 
 	if err := rootCmd.Execute(); err != nil {

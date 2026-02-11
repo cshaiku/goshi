@@ -12,6 +12,7 @@ import (
 	"github.com/cshaiku/goshi/internal/diagnose"
 	"github.com/cshaiku/goshi/internal/diagnostics/integrity"
 	"github.com/cshaiku/goshi/internal/diagnostics/modules"
+	"github.com/cshaiku/goshi/internal/version"
 	"gopkg.in/yaml.v3"
 )
 
@@ -97,6 +98,13 @@ SEE ALSO:
 			if err != nil {
 				return err
 			}
+			info := version.Current()
+			diag.Version = &diagnose.VersionInfo{
+				Version:   info.Version,
+				Commit:    info.Commit,
+				BuildTime: info.BuildTime,
+				Dirty:     info.Dirty,
+			}
 
 			// --- module diagnostics ---
 			modDiag := modules.NewModuleDiagnostic()
@@ -130,6 +138,9 @@ SEE ALSO:
 				return nil
 			case "", "human":
 				// --- human output ---
+				if diag.Version != nil {
+					fmt.Printf("goshi version: %s (commit %s, built %s, dirty=%s)\n", diag.Version.Version, diag.Version.Commit, diag.Version.BuildTime, diag.Version.Dirty)
+				}
 				if len(diag.Issues) == 0 {
 					fmt.Println("✔ environment looks healthy")
 					return nil

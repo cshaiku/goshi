@@ -38,9 +38,12 @@ type ManifestTarball struct {
 
 // Manifest represents the parsed integrity manifest
 type Manifest struct {
-	Version string
-	Tarball ManifestTarball
-	Files   []ManifestEntry
+	Version       string
+	SchemaVersion string
+	FormatVersion string
+	RootID        string
+	Tarball       ManifestTarball
+	Files         []ManifestEntry
 }
 
 // VerificationResult contains the results of file verification
@@ -205,6 +208,18 @@ func (d *IntegrityDiagnostic) parseManifest() (Manifest, error) {
 		case "VERSION":
 			if len(fields) >= 2 {
 				manifest.Version = fields[1]
+			}
+		case "SCHEMA_VERSION":
+			if len(fields) >= 2 {
+				manifest.SchemaVersion = fields[1]
+			}
+		case "FORMAT_VERSION":
+			if len(fields) >= 2 {
+				manifest.FormatVersion = fields[1]
+			}
+		case "ROOT_ID":
+			if len(fields) >= 2 {
+				manifest.RootID = fields[1]
 			}
 		case "TARBALL":
 			if len(fields) >= 4 {

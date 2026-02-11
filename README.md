@@ -504,6 +504,18 @@ bash scripts/verify_goshi_manifest.sh
 
 ---
 
+## Version Information
+
+goshi exposes an internal version system for builds and diagnostics:
+
+```bash
+goshi version
+```
+
+Use `--format=json` or `--format=yaml` for structured output.
+
+---
+
 ## Testing
 
 goshi includes comprehensive test coverage for reliability and security across the system:

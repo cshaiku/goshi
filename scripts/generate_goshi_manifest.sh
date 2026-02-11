@@ -131,23 +131,29 @@ with open(tarball_path, "wb") as raw:
 
 tarball_size = os.path.getsize(tarball_path)
 tarball_hash = sha256_file(tarball_path)
+root_id = hashlib.sha256(f"{tarball_hash}:{len(entries)}".encode("utf-8")).hexdigest()
 
 with open(manifest_path, "w", encoding="utf-8") as f:
     f.write("# goshi.manifest - Source Integrity Manifest\n")
-    f.write("# Version: 1\n")
+    f.write("# Schema Version: 2\n")
+    f.write("# Format Version: 2\n")
     f.write(f"# Generated: {build_date}\n")
     f.write(f"# Git Commit: {git_commit}\n")
     f.write(f"# Git Branch: {git_branch}\n")
     f.write(f"# Git Tag: {git_tag}\n")
     f.write(f"# Git Dirty: {git_dirty}\n")
     f.write(f"# Go Version: {go_version}\n")
+    f.write(f"# Root ID: {root_id}\n")
     f.write(f"# Source Tarball: {os.path.relpath(tarball_path, repo_root)}\n")
     f.write("#\n")
     f.write("# Format:\n")
     f.write("#   TARBALL <sha256> <size> <path>\n")
     f.write("#   FILE <sha256> <size> <mode> <mtime> <path>\n")
     f.write("#\n")
-    f.write("VERSION 1\n")
+    f.write("SCHEMA_VERSION 2\n")
+    f.write("FORMAT_VERSION 2\n")
+    f.write(f"ROOT_ID {root_id}\n")
+    f.write("VERSION 2\n")
     f.write(f"TARBALL {tarball_hash} {tarball_size} {os.path.relpath(tarball_path, repo_root)}\n")
     for entry in entries:
         f.write(

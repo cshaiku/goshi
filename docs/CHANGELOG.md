@@ -11,6 +11,16 @@ All notable changes to goshi are documented in this file. The format is based on
 
 ---
 
+## [1.5.0] - 2026-02-11
+
+### Added
+- **Internal Version System** — build metadata surfaced via `goshi version` and included in diagnostics output
+
+### Changed
+- **Manifest v2 Schema** — add schema/format metadata and stable root identifier while keeping v1 compatibility
+
+---
+
 ## [1.4.0] - 2026-02-11
 
 ### Changed

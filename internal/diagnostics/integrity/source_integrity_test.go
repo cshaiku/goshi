@@ -29,7 +29,10 @@ func TestParseManifest(t *testing.T) {
 	content := `# Test manifest
 # Generated: 2026-02-10
 
-VERSION 1
+SCHEMA_VERSION 2
+FORMAT_VERSION 2
+ROOT_ID root123
+VERSION 2
 TARBALL deadbeef 123 .goshi/goshi.source.tar.gz
 FILE abc123def456 12 0644 2026-02-10T00:00:00Z internal/test/file1.go
 FILE 789ghi012jkl 24 0644 2026-02-10T00:00:00Z internal/test/file2.go
@@ -60,6 +63,15 @@ FILE mno345pqr678 8 0644 2026-02-10T00:00:00Z main.go
 	}
 	if manifest.Files[0].FilePath != "internal/test/file1.go" {
 		t.Errorf("Expected path internal/test/file1.go, got %s", manifest.Files[0].FilePath)
+	}
+	if manifest.SchemaVersion != "2" {
+		t.Errorf("Expected schema version 2, got %s", manifest.SchemaVersion)
+	}
+	if manifest.FormatVersion != "2" {
+		t.Errorf("Expected format version 2, got %s", manifest.FormatVersion)
+	}
+	if manifest.RootID != "root123" {
+		t.Errorf("Expected root id root123, got %s", manifest.RootID)
 	}
 	if manifest.Tarball.Path != ".goshi/goshi.source.tar.gz" {
 		t.Errorf("Expected tarball path .goshi/goshi.source.tar.gz, got %s", manifest.Tarball.Path)
