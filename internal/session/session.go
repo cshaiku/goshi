@@ -24,6 +24,8 @@ type ChatSession struct {
 	ToolRouter   *app.ToolRouter
 	AuditLogger  *audit.Logger
 	Context      context.Context
+	Model        string // LLM model name
+	Provider     string // LLM provider name
 }
 
 // NewChatSession initializes a new chat session with the given system prompt
@@ -98,6 +100,8 @@ func NewChatSession(ctx context.Context, systemPrompt string, backend llm.Backen
 		ToolRouter:   router,
 		AuditLogger:  auditLogger,
 		Context:      ctx,
+		Model:        cfg.LLM.Model,
+		Provider:     cfg.LLM.Provider,
 	}, nil
 }
 
@@ -107,7 +111,7 @@ func (s *ChatSession) AddUserMessage(content string) {
 		Content: content,
 	}
 	s.Messages = append(s.Messages, &msg)
-	
+
 	// Log user message
 	if s.AuditLogger != nil {
 		s.AuditLogger.LogMessage(content, s.WorkingDir)
@@ -120,7 +124,7 @@ func (s *ChatSession) AddAssistantTextMessage(content string) {
 		Content: content,
 	}
 	s.Messages = append(s.Messages, &msg)
-	
+
 	// Log LLM text response
 	if s.AuditLogger != nil {
 		s.AuditLogger.LogResponse(content, false, s.WorkingDir)
@@ -135,7 +139,7 @@ func (s *ChatSession) AddAssistantActionMessage(toolName string, toolArgs map[st
 		ToolID:   "auto",
 	}
 	s.Messages = append(s.Messages, &msg)
-	
+
 	// Log LLM tool call response
 	if s.AuditLogger != nil {
 		s.AuditLogger.LogResponse(toolName, true, s.WorkingDir)

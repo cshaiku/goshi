@@ -4,9 +4,9 @@
 # LLM Configuration
 llm:
   # Model to use - depends on provider
-  # For Ollama: "mistral", "llama2", "neural-chat", etc.
+  # For Ollama: "qwen3:8b-q8_0", "llama2", "neural-chat", etc.
   # For OpenAI: "gpt-4", "gpt-3.5-turbo", etc.
-  model: "mistral"
+  model: "qwen3:8b-q8_0"
   
   # LLM Provider backend
   # Options: "ollama", "openai", "auto" (auto-detect)

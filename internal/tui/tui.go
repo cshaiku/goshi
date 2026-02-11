@@ -102,8 +102,15 @@ func newModel(systemPrompt string, sess *session.ChatSession) model {
 
 	// Initialize new components
 	telemetry := NewTelemetry()
-	telemetry.Backend = "ollama"
-	telemetry.ModelName = "unknown"
+
+	// Set backend and model from session if available
+	if sess != nil {
+		telemetry.Backend = sess.Provider
+		telemetry.ModelName = sess.Model
+	} else {
+		telemetry.Backend = "ollama"
+		telemetry.ModelName = "unknown"
+	}
 
 	statusBar := NewStatusBar(telemetry)
 	inspectPanel := NewInspectPanel(telemetry)
