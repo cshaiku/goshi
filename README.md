@@ -8,6 +8,28 @@ This project explores a constrained, local-first model of AI-assisted tooling wh
 
 Most documentation lives in the docs/ directory. README stays at the repo root so GitHub renders it on the main project page.
 
+<details>
+<summary>Table of Contents</summary>
+
+- [Interactive Modes](#interactive-modes)
+  - [TUI Mode (Default)](#tui-mode-default)
+  - [Headless/CLI Mode](#headlesscli-mode)
+- [Purpose](#purpose)
+- [Core Concepts](#core-concepts)
+  - [Human Context](#human-context)
+  - [Self Model](#self-model)
+  - [Diagnostics-First Execution](#diagnostics-first-execution)
+- [LLM Integration Architecture](#llm-integration-architecture)
+- [Filesystem Safety Model](#filesystem-safety-model)
+- [Execution Pipeline](#execution-pipeline)
+- [LLM Provider Configuration](#llm-provider-configuration)
+- [Testing](#testing)
+- [GitHub Install (Quick Clone)](#github-install-quick-clone)
+- [Build & Run](#build--run)
+- [License](#license)
+
+</details>
+
 ---
 
 ## Interactive Modes
