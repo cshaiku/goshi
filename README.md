@@ -481,6 +481,29 @@ Design notes and schema details: [docs/AUDIT_LOGS_DESIGN.md](docs/AUDIT_LOGS_DES
 
 ---
 
+## Source Integrity Reference Bundle
+
+goshi maintains an offline rebuild reference bundle in `.goshi/`:
+
+- `.goshi/goshi.manifest` — SHA256 manifest of all Go sources with metadata
+- `.goshi/goshi.source.tar.gz` — deterministic tarball of Go sources
+
+Generate or refresh the bundle:
+
+```bash
+bash scripts/generate_goshi_manifest.sh
+```
+
+Verify it against your working tree:
+
+```bash
+bash scripts/verify_goshi_manifest.sh
+```
+
+`goshi doctor` uses this bundle for integrity checks, and `goshi heal` can restore missing or modified Go files from the tarball.
+
+---
+
 ## Testing
 
 goshi includes comprehensive test coverage for reliability and security across the system:
