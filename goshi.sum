@@ -1,9 +1,9 @@
 # goshi.sum - Source Code Integrity Manifest
-# Generated: 2026-02-11T06:06:32Z
-# Git Commit: 40e2bea7822dd8de909541957c50cbc16be30ec6
-# Git Branch: main
+# Generated: 2026-02-11T06:17:35Z
+# Git Commit: 46659eca276f8cc04548a46ce60e59728b3bde38
+# Git Branch: HEAD
 # Git Tag: none
-# Go Version: go1.24.12
+# Go Version: go1.25.6
 #
 # Format: <algorithm> <hash> <file>
 # Algorithm: SHA256
@@ -37,7 +37,7 @@ SHA256 814d737bc3611c1a2123f76877a3f57c1bad4053bb7ae5a0cab9f073b371c252 internal
 SHA256 865b39b71c5eb4fad7d2972ceb55fcaf9aee870c4d289618acfb4b89597f5893 internal/cli/diagnostics.go
 SHA256 5f94b19febe0bea83970c7d65b4f93e8037316f73468cdccd0b35887ae748cc3 internal/cli/display.go
 SHA256 f7647020e14bbff3754c35dab11eb63268b1521f76543e55356f5c801e677742 internal/cli/doctor.go
-SHA256 b7c592cfb705557c903a99df5bb616fd2487a9b5443368a5583c190568af50f3 internal/cli/fs.go
+SHA256 23ba5c3fdebf86567ff22fe49cfc322cac667cdef630dff596f5905d6267429c internal/cli/fs.go
 SHA256 10e3a5175d17f0f7a12f421327412348d5934f5001b776cbea9807ce748489ce internal/cli/fs_apply.go
 SHA256 f900fbbfd2fc64fab7f31d308c84ae499ec5e03abf71bdc5d5e3c5b23c22f5c1 internal/cli/fs_probe.go
 SHA256 30ad2fc9cd5335537f7b2403aa4707c6a1b508d37934b91efd49601bd44e7a48 internal/cli/heal.go
@@ -148,6 +148,6 @@ SHA256 ca34e9ed0933aadbe75fb21fee80b2a0c455620feff010adff4fefe9de0a8e91 go.sum
 # Summary:
 # - Source files: 128
 # - Total hashes: 130
-# - Generated: 2026-02-11T06:06:32Z
-# - Commit: 40e2bea7822dd8de909541957c50cbc16be30ec6
+# - Generated: 2026-02-11T06:17:35Z
+# - Commit: 46659eca276f8cc04548a46ce60e59728b3bde38
 #

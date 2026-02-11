@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/cshaiku/goshi/internal/app"
+	"github.com/cshaiku/goshi/internal/audit"
+	"github.com/cshaiku/goshi/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -53,6 +55,34 @@ ENVIRONMENT:
 	return cmd
 }
 
+// initAuditLogger initializes the audit logger for fs commands
+func initAuditLogger() *audit.Logger {
+	cfg := config.Load()
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = "."
+	}
+
+	repoRoot := cfg.Behavior.RepoRoot
+	if repoRoot == "" {
+		repoRoot = cwd
+	}
+
+	logger, err := audit.NewLogger(audit.Config{
+		Enabled:            cfg.Audit.Enabled,
+		Dir:                cfg.Audit.Dir,
+		RetentionDays:      cfg.Audit.RetentionDays,
+		MaxSessions:        cfg.Audit.MaxSessions,
+		Redact:             cfg.Audit.Redact,
+		ToolArgumentsStyle: cfg.Audit.ToolArgumentsStyle,
+	}, repoRoot)
+	if err != nil {
+		// Silently fail if audit logger can't be initialized; don't break fs commands
+		return nil
+	}
+	return logger
+}
+
 func newFSReadCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "read <path>",
@@ -85,8 +115,17 @@ EXIT CODES:
   1   - Error: File/directory not found or permission denied`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cwd, _ := os.Getwd()
+			auditLogger := initAuditLogger()
+			if auditLogger != nil {
+				auditLogger.LogTool("fs.read", audit.StatusOK, "", map[string]any{"path": args[0]}, cwd)
+			}
+
 			svc, err := app.NewActionService(".")
 			if err != nil {
+				if auditLogger != nil {
+					auditLogger.LogTool("fs.read", audit.StatusError, err.Error(), map[string]any{}, cwd)
+				}
 				return err
 			}
 
@@ -102,7 +141,13 @@ EXIT CODES:
 						"path": path,
 					})
 					if err != nil {
+						if auditLogger != nil {
+							auditLogger.LogTool("fs.read", audit.StatusError, err.Error(), map[string]any{}, cwd)
+						}
 						return err
+					}
+					if auditLogger != nil {
+						auditLogger.LogTool("fs.read", audit.StatusOK, "", map[string]any{"path": path}, cwd)
 					}
 					return printJSON(out)
 				}
@@ -113,9 +158,15 @@ EXIT CODES:
 				"path": path,
 			})
 			if err != nil {
+				if auditLogger != nil {
+					auditLogger.LogTool("fs.read", audit.StatusError, err.Error(), map[string]any{}, cwd)
+				}
 				return err
 			}
 
+			if auditLogger != nil {
+				auditLogger.LogTool("fs.read", audit.StatusOK, "", map[string]any{"path": path}, cwd)
+			}
 			return printJSON(out)
 		},
 	}
@@ -149,8 +200,17 @@ EXIT CODES:
 				path = args[0]
 			}
 
+			cwd, _ := os.Getwd()
+			auditLogger := initAuditLogger()
+			if auditLogger != nil {
+				auditLogger.LogTool("fs.list", audit.StatusOK, "", map[string]any{"path": path}, cwd)
+			}
+
 			svc, err := app.NewActionService(".")
 			if err != nil {
+				if auditLogger != nil {
+					auditLogger.LogTool("fs.list", audit.StatusError, err.Error(), map[string]any{}, cwd)
+				}
 				return err
 			}
 
@@ -158,9 +218,15 @@ EXIT CODES:
 				"path": path,
 			})
 			if err != nil {
+				if auditLogger != nil {
+					auditLogger.LogTool("fs.list", audit.StatusError, err.Error(), map[string]any{}, cwd)
+				}
 				return err
 			}
 
+			if auditLogger != nil {
+				auditLogger.LogTool("fs.list", audit.StatusOK, "", map[string]any{"path": path}, cwd)
+			}
 			return printJSON(out)
 		},
 	}
@@ -188,16 +254,31 @@ EXIT CODES:
   1   - Error: No stdin provided or invalid path`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cwd, _ := os.Getwd()
+			auditLogger := initAuditLogger()
+			if auditLogger != nil {
+				auditLogger.LogTool("fs.write", audit.StatusOK, "", map[string]any{"path": args[0]}, cwd)
+			}
+
 			b, err := io.ReadAll(os.Stdin)
 			if err != nil {
+				if auditLogger != nil {
+					auditLogger.LogTool("fs.write", audit.StatusError, err.Error(), map[string]any{}, cwd)
+				}
 				return err
 			}
 			if len(b) == 0 {
+				if auditLogger != nil {
+					auditLogger.LogTool("fs.write", audit.StatusError, "no input on stdin", map[string]any{}, cwd)
+				}
 				return fmt.Errorf("no input on stdin (pipe content into fs write)")
 			}
 
 			svc, err := app.NewActionService(".")
 			if err != nil {
+				if auditLogger != nil {
+					auditLogger.LogTool("fs.write", audit.StatusError, err.Error(), map[string]any{}, cwd)
+				}
 				return err
 			}
 
@@ -207,9 +288,15 @@ EXIT CODES:
 			})
 
 			if err != nil {
+				if auditLogger != nil {
+					auditLogger.LogTool("fs.write", audit.StatusError, err.Error(), map[string]any{}, cwd)
+				}
 				return err
 			}
 
+			if auditLogger != nil {
+				auditLogger.LogTool("fs.write", audit.StatusOK, "", map[string]any{"path": args[0]}, cwd)
+			}
 			return printJSON(out)
 		},
 	}
