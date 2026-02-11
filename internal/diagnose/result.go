@@ -4,7 +4,7 @@ type Issue struct {
 	Code     string
 	Message  string
 	Strategy string
-  Severity Severity
+	Severity Severity
 }
 
 type Result struct {

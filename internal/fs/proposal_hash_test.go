@@ -1,16 +1,16 @@
 package fs_test
 
 import (
-  "testing"
+	"testing"
 
-  "github.com/cshaiku/goshi/internal/fs"
+	"github.com/cshaiku/goshi/internal/fs"
 )
 
 func TestComputeHashDeterministic(t *testing.T) {
-  a := fs.ComputeHash([]byte("data"))
-  b := fs.ComputeHash([]byte("data"))
+	a := fs.ComputeHash([]byte("data"))
+	b := fs.ComputeHash([]byte("data"))
 
-  if a != b {
-    t.Fatalf("hashes must be deterministic")
-  }
+	if a != b {
+		t.Fatalf("hashes must be deterministic")
+	}
 }

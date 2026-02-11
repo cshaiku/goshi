@@ -5,8 +5,8 @@ import (
 )
 
 type LawMetrics struct {
-	RuleLines        int
-	ConstraintCount  int
+	RuleLines         int
+	ConstraintCount   int
 	EnforcementActive bool
 }
 
@@ -54,8 +54,8 @@ func ComputeLawMetrics(raw string) LawMetrics {
 	}
 
 	return LawMetrics{
-		RuleLines:        ruleLines,
-		ConstraintCount:  constraints,
+		RuleLines:         ruleLines,
+		ConstraintCount:   constraints,
 		EnforcementActive: enforcement,
 	}
 }

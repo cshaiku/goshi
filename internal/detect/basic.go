@@ -11,11 +11,11 @@ type BasicDetector struct {
 }
 
 func (d *BasicDetector) Detect() (Result, error) {
-  res := Result{
-  	MissingBinaries: []string{},
-  	BrokenBinaries:  []string{},
-  	Warnings:        []string{},
-  }
+	res := Result{
+		MissingBinaries: []string{},
+		BrokenBinaries:  []string{},
+		Warnings:        []string{},
+	}
 
 	path := os.Getenv("PATH")
 	if path == "" {

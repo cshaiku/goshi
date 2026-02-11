@@ -11,7 +11,7 @@ type ActionService struct {
 }
 
 func (s *ActionService) Dispatcher() *runtime.Dispatcher {
-  return s.dispatcher
+	return s.dispatcher
 }
 
 // NewActionService creates an ActionService scoped to a root directory.

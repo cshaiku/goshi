@@ -80,6 +80,11 @@ func CalculateBackoff(attempt int, minBackoff, maxBackoff time.Duration) time.Du
 	jitter := backoff * 0.25 * jitterFactor
 	backoff += jitter
 
+	// Cap again after adding jitter to ensure we never exceed maxBackoff
+	if backoff > float64(maxBackoff) {
+		backoff = float64(maxBackoff)
+	}
+
 	// Ensure minimum
 	if backoff < float64(minBackoff) {
 		backoff = float64(minBackoff)
