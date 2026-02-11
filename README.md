@@ -31,7 +31,12 @@ Run `goshi` or `goshi chat` to launch an interactive Text User Interface:
 - **Input Area** — Message composer with mode and toggles display
 
 
-![Alt text](assets/screen-tui-v2.png)
+##Text User Interface##
+![tui v2](assets/screen-tui-v2.png)
+
+##Command Line Interface running filesystem list in current folder##
+![cli fs list .](assets/screenshot-cli-fs-list.png)
+
 
 **Features:**
 - Real-time LLM streaming with visual feedback
