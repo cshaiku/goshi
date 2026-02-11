@@ -31,31 +31,47 @@ echo "[3/3] Generating source integrity manifest (goshi.sum)..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-if [ -f "$REPO_ROOT/scripts/generate_goshi_sum.sh" ]; then
-    bash "$REPO_ROOT/scripts/generate_goshi_sum.sh"
-    
-    # Check if goshi.sum changed
-    if ! git diff --quiet goshi.sum 2>/dev/null; then
-        echo ""
-        echo "  ⚠️  goshi.sum was updated"
-        echo ""
-        echo "  The source integrity manifest has changed."
-        echo "  You should commit the updated goshi.sum file:"
-        echo ""
-        echo "    git add goshi.sum"
-        echo "    git commit -m 'chore: Update source integrity manifest'"
-        echo "    git push"
-        echo ""
-        echo "  Or if this is intentional, you can:"
-        echo "    git add goshi.sum"
-        echo "    git commit --amend --no-edit"
-        echo "    git push"
-        echo ""
-        exit 1
-    fi
-    echo "  ✅ Source integrity manifest up to date"
-else
+# Check if goshi.sum is already staged
+if git diff --cached --name-only 2>/dev/null | grep -q "^goshi.sum$"; then
+    echo "  ℹ️  goshi.sum is already staged, skipping generation"
+    echo "  ✅ Source integrity manifest will be included in push"
+elif [ ! -f "$REPO_ROOT/scripts/generate_goshi_sum.sh" ]; then
     echo "  ⚠️  Generator script not found, skipping"
+else
+    # Check if any .go files changed since last commit
+    # This prevents regeneration loop when only goshi.sum metadata (git hash) changes
+    GO_FILES_CHANGED=$(git diff --name-only HEAD 2>/dev/null | grep '\.go$' || true)
+    
+    if [ -f "$REPO_ROOT/goshi.sum" ] && [ -z "$GO_FILES_CHANGED" ]; then
+        echo "  ℹ️  No Go source files changed, skipping generation"
+        echo "  ✅ Source integrity manifest is up to date"
+    else
+        if [ -n "$GO_FILES_CHANGED" ]; then
+            echo "  📝 Go source files changed, regenerating..."
+        fi
+        bash "$REPO_ROOT/scripts/generate_goshi_sum.sh"
+        
+        # Check if goshi.sum changed
+        if ! git diff --quiet goshi.sum 2>/dev/null; then
+            echo ""
+            echo "  ⚠️  goshi.sum was updated"
+            echo ""
+            echo "  The source integrity manifest has changed."
+            echo "  You should commit the updated goshi.sum file:"
+            echo ""
+            echo "    git add goshi.sum"
+            echo "    git commit -m 'chore: Update source integrity manifest'"
+            echo "    git push"
+            echo ""
+            echo "  Or if this is intentional, you can:"
+            echo "    git add goshi.sum"
+            echo "    git commit --amend --no-edit"
+            echo "    git push"
+            echo ""
+            exit 1
+        fi
+        echo "  ✅ Source integrity manifest up to date"
+    fi
 fi
 echo ""
 
