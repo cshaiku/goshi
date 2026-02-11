@@ -175,6 +175,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
+		case tea.KeyEnter:
+			// Send message only when focused on input
+			if m.focusedRegion == FocusInput {
+				return m.handleSendMessage()
+			}
 		case tea.KeyCtrlA:
 			// Toggle audit panel
 			m.auditPanelVisible = !m.auditPanelVisible
@@ -184,9 +189,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.focusedRegion = FocusInput
 			}
 			return m, nil
-		case tea.KeyCtrlS:
-			return m.handleSendMessage()
-		case tea.KeyCtrlM:
+		case tea.KeyCtrlL:
 			// Cycle through modes
 			m.mode = (m.mode + 1) % 3
 			return m, nil
@@ -674,7 +677,7 @@ func (m model) renderInput() string {
 	}
 
 	return fmt.Sprintf(
-		"┌─ Input (Ctrl+S to send, Tab to cycle focus, Ctrl+D/T for toggles, Ctrl+A for audit)%s%s%s%s\n%s",
+		"┌─ Input (Enter to send, Shift/Ctrl+Enter for newline, Tab to cycle focus, Ctrl+L for mode, Ctrl+D/T for toggles, Ctrl+A for audit)%s%s%s%s\n%s",
 		focusIndicator,
 		modeDisplay,
 		toglesDisplay,
@@ -803,7 +806,7 @@ func (m *model) AccessibilityDescription() string {
 	return fmt.Sprintf(
 		"Goshi TUI. Current mode: %s. Toggles: Dry Run %s, Deterministic %s. "+
 			"Focus: Use Tab to cycle between output stream, inspect panel, and input area. "+
-			"Commands: Ctrl+S to send, Ctrl+M to change mode, Ctrl+D/T to toggle, Escape to quit.",
+			"Commands: Enter to send, Ctrl+L to change mode, Ctrl+D/T to toggle, Escape to quit.",
 		m.mode.String(),
 		func() string {
 			if m.toggles.DryRun {

@@ -662,20 +662,20 @@ func TestModeSelector(t *testing.T) {
 		t.Errorf("expected initial mode to be Chat, got %s", m.mode.String())
 	}
 
-	// Test mode cycling with Ctrl+M
-	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlM})
+	// Test mode cycling with Ctrl+L
+	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlL})
 	m = result.(model)
 	if m.mode != ModeCommand {
-		t.Errorf("expected mode to be Command after Ctrl+M, got %s", m.mode.String())
+		t.Errorf("expected mode to be Command after Ctrl+L, got %s", m.mode.String())
 	}
 
-	result, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlM})
+	result, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlL})
 	m = result.(model)
 	if m.mode != ModeDiff {
-		t.Errorf("expected mode to be Diff after second Ctrl+M, got %s", m.mode.String())
+		t.Errorf("expected mode to be Diff after second Ctrl+L, got %s", m.mode.String())
 	}
 
-	result, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlM})
+	result, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlL})
 	m = result.(model)
 	if m.mode != ModeChat {
 		t.Errorf("expected mode to wrap back to Chat, got %s", m.mode.String())
@@ -966,8 +966,8 @@ func TestAccessibilityDescription(t *testing.T) {
 		t.Error("expected Tab navigation info in accessibility description")
 	}
 
-	// Check for keyboard instructions
-	if !strings.Contains(desc, "Ctrl+S") {
+	// Check for keyboard instructions - Enter is now the send command
+	if !strings.Contains(desc, "Enter") {
 		t.Error("expected send command info in accessibility description")
 	}
 }

@@ -9,8 +9,8 @@ import (
 func TestLoadDefaults(t *testing.T) {
 	cfg := LoadDefaults()
 
-	if cfg.LLM.Model != "qwen3:8b-q8_0" {
-		t.Errorf("expected default model to be qwen3:8b-q8_0, got %s", cfg.LLM.Model)
+	if cfg.LLM.Model != "llama3.1:8b" {
+		t.Errorf("expected default model to be llama3.1:8b, got %s", cfg.LLM.Model)
 	}
 
 	if cfg.LLM.Provider != "ollama" {
