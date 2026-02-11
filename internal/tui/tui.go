@@ -35,16 +35,19 @@ type Message struct {
 // model is the TUI application state
 type model struct {
 	// Components
-	viewport viewport.Model
-	textarea textarea.Model
-	messages []Message
+	viewport     viewport.Model
+	textarea     textarea.Model
+	messages     []Message
+	inspectPanel *InspectPanel
+	statusBar    *StatusBar
+	layout       *Layout
+	telemetry    *Telemetry
 
 	// State
-	ready      bool
-	width      int
-	height     int
-	statusLine string
-	err        error
+	ready         bool
+	focusedRegion FocusRegion
+	statusLine    string
+	err           error
 
 	// Integration
 	chatSession  *session.ChatSession
@@ -66,13 +69,27 @@ func newModel(systemPrompt string, sess *session.ChatSession) model {
 
 	vp := viewport.New(80, 20)
 
+	// Initialize new components
+	telemetry := NewTelemetry()
+	telemetry.Backend = "ollama"
+	telemetry.ModelName = "unknown"
+
+	statusBar := NewStatusBar(telemetry)
+	inspectPanel := NewInspectPanel()
+	layout := NewLayout()
+
 	return model{
-		viewport:     vp,
-		textarea:     ta,
-		messages:     []Message{},
-		chatSession:  sess,
-		systemPrompt: systemPrompt,
-		statusLine:   "Ready",
+		viewport:      vp,
+		textarea:      ta,
+		messages:      []Message{},
+		inspectPanel:  inspectPanel,
+		statusBar:     statusBar,
+		layout:        layout,
+		telemetry:     telemetry,
+		focusedRegion: FocusInput,
+		chatSession:   sess,
+		systemPrompt:  systemPrompt,
+		statusLine:    "Ready",
 	}
 }
 
@@ -96,19 +113,29 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case tea.KeyCtrlS:
 			return m.handleSendMessage()
+		case tea.KeyTab:
+			// Cycle focus forward
+			m.focusedRegion = (m.focusedRegion + 1) % 3
+			return m, nil
+		case tea.KeyShiftTab:
+			// Cycle focus backward
+			m.focusedRegion = (m.focusedRegion + 2) % 3
+			return m, nil
 		}
 
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
+		// Recalculate layout
+		m.layout.Recalculate(msg.Width, msg.Height)
 
-		headerHeight := 4
-		footerHeight := 5
-		statusHeight := 1
+		// Update viewport dimensions
+		m.viewport.Width = m.layout.OutputStreamWidth - 2
+		m.viewport.Height = m.layout.OutputStreamHeight - 2
 
-		m.viewport.Width = msg.Width - 2
-		m.viewport.Height = msg.Height - headerHeight - footerHeight - statusHeight
-		m.textarea.SetWidth(msg.Width - 4)
+		// Update textarea dimensions
+		m.textarea.SetWidth(m.layout.OutputStreamWidth - 4)
+
+		// Update inspect panel dimensions
+		m.inspectPanel.SetSize(m.layout.InspectPanelWidth, m.layout.OutputStreamHeight)
 
 		if !m.ready {
 			m.updateViewportContent()
@@ -223,24 +250,51 @@ func (m model) View() string {
 		return "\n  Initializing Goshi TUI..."
 	}
 
-	var sb strings.Builder
+	// Update status bar metrics
+	metrics := selfmodel.ComputeLawMetrics(m.systemPrompt)
+	m.statusBar.UpdateMetrics(metrics.RuleLines, metrics.ConstraintCount)
 
-	// Header
-	sb.WriteString(m.renderHeader())
-	sb.WriteString("\n\n")
+	// Update telemetry status based on chat session
+	if m.chatSession != nil && m.chatSession.Permissions != nil {
+		perms := m.chatSession.Permissions
+		if perms.FSRead && perms.FSWrite {
+			m.telemetry.UpdateStatus("ACTIVE")
+		} else if perms.FSRead || perms.FSWrite {
+			m.telemetry.UpdateStatus("ACTIVE")
+		}
+	}
 
-	// Chat viewport
-	sb.WriteString(m.viewport.View())
-	sb.WriteString("\n\n")
+	// Update memory count
+	if m.chatSession != nil {
+		m.telemetry.UpdateMemory(len(m.chatSession.Messages))
+	}
 
-	// Status
-	sb.WriteString(m.renderStatus())
-	sb.WriteString("\n")
+	// Render output stream (left side)
+	outputStream := m.renderOutputStream()
 
-	// Input
-	sb.WriteString(m.renderInput())
+	// Render inspect panel (right side)
+	inspectPanel := m.inspectPanel.Render()
 
-	return sb.String()
+	// Combine horizontally using lipgloss
+	topRegion := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		outputStream,
+		inspectPanel,
+	)
+
+	// Render status bar (2 lines)
+	statusBar := m.statusBar.Render(m.layout.TerminalWidth)
+
+	// Render input area
+	inputArea := m.renderInput()
+
+	// Combine vertically
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		topRegion,
+		statusBar,
+		inputArea,
+	)
 }
 
 // Custom message types
@@ -415,48 +469,36 @@ func (m *model) updateViewportContent() {
 	m.viewport.GotoBottom()
 }
 
-func (m model) renderHeader() string {
-	metrics := selfmodel.ComputeLawMetrics(m.systemPrompt)
-	status := "STAGED"
-
-	if m.chatSession != nil && m.chatSession.Permissions != nil {
-		perms := m.chatSession.Permissions
-		if perms.FSRead && perms.FSWrite {
-			status = "ACTIVE (FS_READ + FS_WRITE)"
-		} else if perms.FSRead {
-			status = "ACTIVE (FS_READ)"
-		} else if perms.FSWrite {
-			status = "ACTIVE (FS_WRITE)"
-		}
-	}
-
-	return styleHeader(fmt.Sprintf(
-		"╔═ GOSHI TUI ════════════════════════════════════════════╗\n"+
-			"║ Laws: %d lines │ Constraints: %d │ Status: %s",
-		metrics.RuleLines,
-		metrics.ConstraintCount,
-		status,
-	))
-}
-
-func (m model) renderStatus() string {
-	text := fmt.Sprintf("─ %s ", m.statusLine)
-	if m.err != nil {
-		errMsg := m.err.Error()
-		// Truncate long error messages
-		if len(errMsg) > 80 {
-			errMsg = errMsg[:77] + "..."
-		}
-		return styleError(fmt.Sprintf("─ Error: %v ", errMsg))
-	}
-	return styleStatus(text)
-}
-
 func (m model) renderInput() string {
+	focusIndicator := ""
+	if m.focusedRegion == FocusInput {
+		focusIndicator = " (focused)"
+	}
+
 	return fmt.Sprintf(
-		"┌─ Input (Ctrl+S to send)\n%s",
+		"┌─ Input (Ctrl+S to send, Tab to cycle focus)%s\n%s",
+		focusIndicator,
 		m.textarea.View(),
 	)
+}
+
+// renderOutputStream renders the main output stream (left region)
+func (m model) renderOutputStream() string {
+	// Create a border with focus indicator
+	borderStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("240")).
+		Width(m.layout.OutputStreamWidth - 2).
+		Height(m.layout.OutputStreamHeight - 2)
+
+	if m.focusedRegion == FocusOutputStream {
+		borderStyle = borderStyle.BorderForeground(lipgloss.Color("12"))
+	}
+
+	// Content is the viewport
+	content := m.viewport.View()
+
+	return borderStyle.Render(content)
 }
 
 // Styles using lipgloss
