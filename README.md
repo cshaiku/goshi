@@ -489,6 +489,41 @@ go test -run TestIntegration_FSReadTool ./internal/cli
 
 ---
 
+## GitHub Install (Quick Clone)
+
+Choose one of the following and paste it into your terminal:
+
+**HTTPS**
+```bash
+git clone https://github.com/cshaiku/goshi.git
+cd goshi
+go mod download
+make build
+./bin/goshi --help
+```
+
+**SSH**
+```bash
+git clone git@github.com:cshaiku/goshi.git
+cd goshi
+go mod download
+make build
+./bin/goshi --help
+```
+
+**GitHub CLI**
+```bash
+gh repo clone cshaiku/goshi
+cd goshi
+go mod download
+make build
+./bin/goshi --help
+```
+
+Want to contribute? Fork the repo on GitHub, then replace `cshaiku/goshi` with your fork URL.
+
+---
+
 ## Build & Run
 
 ```bash
