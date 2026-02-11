@@ -652,6 +652,77 @@ func TestRoleIdentifierStyling(t *testing.T) {
 	}
 }
 
+// Phase 3: Mode Selector Tests
+
+func TestModeSelector(t *testing.T) {
+	m := newModel("test", nil)
+
+	// Initial mode should be Chat
+	if m.mode != ModeChat {
+		t.Errorf("expected initial mode to be Chat, got %s", m.mode.String())
+	}
+
+	// Test mode cycling with Ctrl+M
+	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlM})
+	m = result.(model)
+	if m.mode != ModeCommand {
+		t.Errorf("expected mode to be Command after Ctrl+M, got %s", m.mode.String())
+	}
+
+	result, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlM})
+	m = result.(model)
+	if m.mode != ModeDiff {
+		t.Errorf("expected mode to be Diff after second Ctrl+M, got %s", m.mode.String())
+	}
+
+	result, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlM})
+	m = result.(model)
+	if m.mode != ModeChat {
+		t.Errorf("expected mode to wrap back to Chat, got %s", m.mode.String())
+	}
+}
+
+func TestModeString(t *testing.T) {
+	tests := []struct {
+		mode     Mode
+		expected string
+	}{
+		{ModeChat, "Chat"},
+		{ModeCommand, "Command"},
+		{ModeDiff, "Diff"},
+	}
+
+	for _, tt := range tests {
+		if tt.mode.String() != tt.expected {
+			t.Errorf("expected mode string %q, got %q", tt.expected, tt.mode.String())
+		}
+	}
+}
+
+func TestModeDisplayInInput(t *testing.T) {
+	m := newModel("test", nil)
+
+	// Test Chat mode display
+	inputView := m.renderInput()
+	if !strings.Contains(inputView, "Mode: Chat") {
+		t.Errorf("expected Chat mode in input display, got: %s", inputView)
+	}
+
+	// Switch to Command mode
+	m.mode = ModeCommand
+	inputView = m.renderInput()
+	if !strings.Contains(inputView, "Mode: Command") {
+		t.Errorf("expected Command mode in input display, got: %s", inputView)
+	}
+
+	// Switch to Diff mode
+	m.mode = ModeDiff
+	inputView = m.renderInput()
+	if !strings.Contains(inputView, "Mode: Diff") {
+		t.Errorf("expected Diff mode in input display, got: %s", inputView)
+	}
+}
+
 func TestMultipleRolesInOutput(t *testing.T) {
 	m := newModel("test", nil)
 	m.messages = []Message{
@@ -672,4 +743,3 @@ func TestMultipleRolesInOutput(t *testing.T) {
 		}
 	}
 }
-

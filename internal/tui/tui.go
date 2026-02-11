@@ -32,6 +32,29 @@ type Message struct {
 	InProgress bool // True if still streaming
 }
 
+// Mode represents the TUI operational mode
+type Mode int
+
+const (
+	ModeChat Mode = iota
+	ModeCommand
+	ModeDiff
+)
+
+// String returns the string representation of the mode
+func (m Mode) String() string {
+	switch m {
+	case ModeChat:
+		return "Chat"
+	case ModeCommand:
+		return "Command"
+	case ModeDiff:
+		return "Diff"
+	default:
+		return "Chat"
+	}
+}
+
 // model is the TUI application state
 type model struct {
 	// Components
@@ -46,6 +69,7 @@ type model struct {
 	// State
 	ready         bool
 	focusedRegion FocusRegion
+	mode          Mode
 	statusLine    string
 	err           error
 
@@ -87,6 +111,7 @@ func newModel(systemPrompt string, sess *session.ChatSession) model {
 		layout:        layout,
 		telemetry:     telemetry,
 		focusedRegion: FocusInput,
+		mode:          ModeChat,
 		chatSession:   sess,
 		systemPrompt:  systemPrompt,
 		statusLine:    "Ready",
@@ -122,6 +147,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case tea.KeyCtrlS:
 			return m.handleSendMessage()
+		case tea.KeyCtrlM:
+			// Cycle through modes
+			m.mode = (m.mode + 1) % 3
+			return m, nil
 		case tea.KeyTab:
 			// Cycle focus forward
 			m.focusedRegion = (m.focusedRegion + 1) % 3
@@ -511,9 +540,13 @@ func (m model) renderInput() string {
 		focusIndicator = " (focused)"
 	}
 
+	// Mode selector display
+	modeDisplay := fmt.Sprintf(" │ Mode: %s (Ctrl+M to cycle)", m.mode.String())
+
 	return fmt.Sprintf(
-		"┌─ Input (Ctrl+S to send, Tab to cycle focus)%s\n%s",
+		"┌─ Input (Ctrl+S to send, Tab to cycle focus)%s%s\n%s",
 		focusIndicator,
+		modeDisplay,
 		m.textarea.View(),
 	)
 }
@@ -577,7 +610,7 @@ var (
 			Italic(true)
 )
 
-func styleHeader(text string) string      { return headerStyle.Render(text) }
+func styleHeader(text string) string { return headerStyle.Render(text) }
 func styleUserMessage(text string) string {
 	role := roleStyle.Render("USER: ")
 	return userStyle.Render(role + text)
