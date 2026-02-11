@@ -1,9 +1,9 @@
 # goshi.sum - Source Code Integrity Manifest
-# Generated: 2026-02-11T06:17:35Z
-# Git Commit: 46659eca276f8cc04548a46ce60e59728b3bde38
-# Git Branch: HEAD
+# Generated: 2026-02-11T06:18:42Z
+# Git Commit: 6dff01b6cefd5edf8ce0f56be46a81dad58fe620
+# Git Branch: main
 # Git Tag: none
-# Go Version: go1.25.6
+# Go Version: go1.24.12
 #
 # Format: <algorithm> <hash> <file>
 # Algorithm: SHA256
@@ -148,6 +148,6 @@ SHA256 ca34e9ed0933aadbe75fb21fee80b2a0c455620feff010adff4fefe9de0a8e91 go.sum
 # Summary:
 # - Source files: 128
 # - Total hashes: 130
-# - Generated: 2026-02-11T06:17:35Z
-# - Commit: 46659eca276f8cc04548a46ce60e59728b3bde38
+# - Generated: 2026-02-11T06:18:42Z
+# - Commit: 6dff01b6cefd5edf8ce0f56be46a81dad58fe620
 #
