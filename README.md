@@ -508,7 +508,7 @@ goshi includes comprehensive test coverage for reliability and security across t
 - **LLM Streaming Display** (3 tests): Response completion, progressive display, error recovery
 - **Tool Execution UI** (2 tests): Tool result display, error handling, status indicators
 
-**Total: 230+ passing tests** across 16+ packages.
+**Total: 282 passing tests** across 16+ packages.
 
 Run all tests:
 
