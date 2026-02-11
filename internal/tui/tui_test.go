@@ -723,6 +723,100 @@ func TestModeDisplayInInput(t *testing.T) {
 	}
 }
 
+// Phase 3: Input Toggles Tests
+
+func TestInputToggles(t *testing.T) {
+	m := newModel("test", nil)
+
+	// Initial state should have toggles off
+	if m.toggles.DryRun {
+		t.Error("expected DryRun to be off initially")
+	}
+	if m.toggles.Deterministic {
+		t.Error("expected Deterministic to be off initially")
+	}
+
+	// Test Ctrl+D to toggle dry run
+	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlD})
+	m = result.(model)
+	if !m.toggles.DryRun {
+		t.Error("expected DryRun to be on after Ctrl+D")
+	}
+
+	// Test Ctrl+T to toggle deterministic
+	result, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlT})
+	m = result.(model)
+	if !m.toggles.Deterministic {
+		t.Error("expected Deterministic to be on after Ctrl+T")
+	}
+
+	// Test toggling off
+	result, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlD})
+	m = result.(model)
+	if m.toggles.DryRun {
+		t.Error("expected DryRun to be off after second Ctrl+D")
+	}
+
+	result, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlT})
+	m = result.(model)
+	if m.toggles.Deterministic {
+		t.Error("expected Deterministic to be off after second Ctrl+T")
+	}
+}
+
+func TestTogglesDisplayInInput(t *testing.T) {
+	m := newModel("test", nil)
+
+	// Toggles off
+	inputView := m.renderInput()
+	if !strings.Contains(inputView, "○ Dry Run") {
+		t.Errorf("expected off indicator for Dry Run, got: %s", inputView)
+	}
+	if !strings.Contains(inputView, "○ Deterministic") {
+		t.Errorf("expected off indicator for Deterministic, got: %s", inputView)
+	}
+
+	// Turn on Dry Run
+	m.toggles.DryRun = true
+	inputView = m.renderInput()
+	if !strings.Contains(inputView, "✓ Dry Run") {
+		t.Errorf("expected on indicator for Dry Run, got: %s", inputView)
+	}
+
+	// Turn on Deterministic
+	m.toggles.Deterministic = true
+	inputView = m.renderInput()
+	if !strings.Contains(inputView, "✓ Deterministic") {
+		t.Errorf("expected on indicator for Deterministic, got: %s", inputView)
+	}
+}
+
+func TestTogglesIndependent(t *testing.T) {
+	m := newModel("test", nil)
+
+	// Toggle dry run on
+	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlD})
+	m = result.(model)
+
+	if !m.toggles.DryRun {
+		t.Error("expected DryRun to be on")
+	}
+	if m.toggles.Deterministic {
+		t.Error("expected Deterministic to remain off")
+	}
+
+	// Toggle deterministic on (dry run should stay on)
+	result, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlT})
+	m = result.(model)
+
+	if !m.toggles.DryRun {
+		t.Error("expected DryRun to still be on")
+	}
+	if !m.toggles.Deterministic {
+		t.Error("expected Deterministic to be on")
+	}
+}
+
 func TestMultipleRolesInOutput(t *testing.T) {
 	m := newModel("test", nil)
 	m.messages = []Message{

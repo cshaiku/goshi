@@ -55,6 +55,12 @@ func (m Mode) String() string {
 	}
 }
 
+// InputToggles represents the state of input toggles
+type InputToggles struct {
+	DryRun        bool
+	Deterministic bool
+}
+
 // model is the TUI application state
 type model struct {
 	// Components
@@ -70,6 +76,7 @@ type model struct {
 	ready         bool
 	focusedRegion FocusRegion
 	mode          Mode
+	toggles       InputToggles
 	statusLine    string
 	err           error
 
@@ -112,6 +119,7 @@ func newModel(systemPrompt string, sess *session.ChatSession) model {
 		telemetry:     telemetry,
 		focusedRegion: FocusInput,
 		mode:          ModeChat,
+		toggles:       InputToggles{DryRun: false, Deterministic: false},
 		chatSession:   sess,
 		systemPrompt:  systemPrompt,
 		statusLine:    "Ready",
@@ -150,6 +158,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlM:
 			// Cycle through modes
 			m.mode = (m.mode + 1) % 3
+			return m, nil
+		case tea.KeyCtrlD:
+			// Toggle dry run
+			m.toggles.DryRun = !m.toggles.DryRun
+			return m, nil
+		case tea.KeyCtrlT:
+			// Toggle deterministic
+			m.toggles.Deterministic = !m.toggles.Deterministic
 			return m, nil
 		case tea.KeyTab:
 			// Cycle focus forward
@@ -541,12 +557,30 @@ func (m model) renderInput() string {
 	}
 
 	// Mode selector display
-	modeDisplay := fmt.Sprintf(" │ Mode: %s (Ctrl+M to cycle)", m.mode.String())
+	modeDisplay := fmt.Sprintf(" │ Mode: %s (Ctrl+M)", m.mode.String())
+
+	// Toggles display
+	dryRunIndicator := ""
+	if m.toggles.DryRun {
+		dryRunIndicator = " ✓ Dry Run"
+	} else {
+		dryRunIndicator = " ○ Dry Run"
+	}
+
+	deterministic := ""
+	if m.toggles.Deterministic {
+		deterministic = " ✓ Deterministic"
+	} else {
+		deterministic = " ○ Deterministic"
+	}
+
+	toglesDisplay := fmt.Sprintf(" │ Toggles: %s %s", dryRunIndicator, deterministic)
 
 	return fmt.Sprintf(
-		"┌─ Input (Ctrl+S to send, Tab to cycle focus)%s%s\n%s",
+		"┌─ Input (Ctrl+S to send, Tab to cycle focus, Ctrl+D/T for toggles)%s%s%s\n%s",
 		focusIndicator,
 		modeDisplay,
+		toglesDisplay,
 		m.textarea.View(),
 	)
 }
