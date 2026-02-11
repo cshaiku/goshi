@@ -339,21 +339,35 @@ func TestStatusBarRender(t *testing.T) {
 }
 
 func TestInspectPanelStub(t *testing.T) {
-	panel := NewInspectPanel()
+	telemetry := NewTelemetry()
+	panel := NewInspectPanel(telemetry)
 	panel.SetSize(30, 20)
+	panel.UpdateMetrics(312, 9)
 
-	rendered := panel.Render()
+	rendered := panel.Render("test system prompt")
 
 	if rendered == "" {
 		t.Error("expected non-empty inspect panel")
 	}
 
-	if !strings.Contains(rendered, "INSPECT PANEL") {
-		t.Error("expected panel to contain header")
+	if !strings.Contains(rendered, "INSPECT") {
+		t.Error("expected panel to contain INSPECT header")
 	}
 
-	if !strings.Contains(rendered, "Phase 2") {
-		t.Error("expected panel to indicate Phase 2 placeholder")
+	if !strings.Contains(rendered, "MEMORY") {
+		t.Error("expected panel to contain MEMORY section")
+	}
+
+	if !strings.Contains(rendered, "PROMPT INFO") {
+		t.Error("expected panel to contain PROMPT INFO section")
+	}
+
+	if !strings.Contains(rendered, "GUARDRAILS") {
+		t.Error("expected panel to contain GUARDRAILS section")
+	}
+
+	if !strings.Contains(rendered, "CAPABILITIES") {
+		t.Error("expected panel to contain CAPABILITIES section")
 	}
 }
 
@@ -408,5 +422,143 @@ func TestComponentsInitialized(t *testing.T) {
 
 	if m.inspectPanel == nil {
 		t.Error("expected inspect panel to be initialized")
+	}
+}
+
+// Phase 2: Inspect Panel Implementation Tests
+
+func TestInspectPanelMemorySection(t *testing.T) {
+	telemetry := NewTelemetry()
+	telemetry.MemoryEntries = 42
+	telemetry.MemoryMax = 128
+
+	panel := NewInspectPanel(telemetry)
+	panel.SetSize(30, 20)
+
+	rendered := panel.Render("test")
+
+	if !strings.Contains(rendered, "42/128") {
+		t.Error("expected memory usage to show 42/128")
+	}
+
+	if !strings.Contains(rendered, "session") {
+		t.Error("expected memory scope to be 'session'")
+	}
+}
+
+func TestInspectPanelPromptInfo(t *testing.T) {
+	telemetry := NewTelemetry()
+	telemetry.Temperature = 0.7
+
+	panel := NewInspectPanel(telemetry)
+	panel.SetSize(30, 20)
+
+	rendered := panel.Render("test system prompt")
+
+	if !strings.Contains(rendered, "0.7") {
+		t.Error("expected temperature 0.7 to be displayed")
+	}
+
+	// Policy hash should be present (6 hex chars)
+	if !strings.Contains(rendered, "Policy Hash") {
+		t.Error("expected policy hash label")
+	}
+}
+
+func TestInspectPanelGuardrails(t *testing.T) {
+	telemetry := NewTelemetry()
+	panel := NewInspectPanel(telemetry)
+	panel.SetSize(30, 20)
+	panel.UpdateMetrics(312, 9)
+	panel.SetGuardrails(true)
+
+	rendered := panel.Render("test")
+
+	if !strings.Contains(rendered, "ON") {
+		t.Error("expected guardrails to show ON")
+	}
+
+	if !strings.Contains(rendered, "312") {
+		t.Error("expected laws count 312")
+	}
+
+	if !strings.Contains(rendered, "9") {
+		t.Error("expected constraints count 9")
+	}
+}
+
+func TestInspectPanelCapabilities(t *testing.T) {
+	telemetry := NewTelemetry()
+	panel := NewInspectPanel(telemetry)
+	panel.SetSize(30, 20)
+
+	caps := &Capabilities{
+		ToolsEnabled:      true,
+		FilesystemAllowed: true,
+		FilesystemStatus:  "allowed",
+		NetworkAllowed:    false,
+		NetworkStatus:     "denied",
+	}
+	panel.UpdateCapabilities(caps)
+
+	rendered := panel.Render("test")
+
+	if !strings.Contains(rendered, "enabled") {
+		t.Error("expected tools to show enabled")
+	}
+
+	if !strings.Contains(rendered, "allowed") {
+		t.Error("expected filesystem to show allowed")
+	}
+
+	if !strings.Contains(rendered, "denied") {
+		t.Error("expected network to show denied")
+	}
+}
+
+func TestInspectPanelCapabilitiesReadOnly(t *testing.T) {
+	telemetry := NewTelemetry()
+	panel := NewInspectPanel(telemetry)
+	panel.SetSize(30, 20)
+
+	caps := &Capabilities{
+		ToolsEnabled:      true,
+		FilesystemAllowed: true,
+		FilesystemStatus:  "read-only",
+		NetworkAllowed:    false,
+		NetworkStatus:     "restricted",
+	}
+	panel.UpdateCapabilities(caps)
+
+	rendered := panel.Render("test")
+
+	if !strings.Contains(rendered, "read-only") {
+		t.Error("expected filesystem to show read-only")
+	}
+
+	if !strings.Contains(rendered, "restricted") {
+		t.Error("expected network to show restricted")
+	}
+}
+
+func TestInspectPanelAllSections(t *testing.T) {
+	telemetry := NewTelemetry()
+	telemetry.MemoryEntries = 10
+	telemetry.MemoryMax = 100
+	telemetry.Temperature = 0.2
+
+	panel := NewInspectPanel(telemetry)
+	panel.SetSize(35, 30)
+	panel.UpdateMetrics(100, 5)
+	panel.SetGuardrails(true)
+
+	rendered := panel.Render("complete test")
+
+	// Check all sections are present
+	sections := []string{"MEMORY", "PROMPT INFO", "GUARDRAILS", "CAPABILITIES"}
+	for _, section := range sections {
+		if !strings.Contains(rendered, section) {
+			t.Errorf("expected panel to contain %s section", section)
+		}
 	}
 }

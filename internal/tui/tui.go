@@ -75,7 +75,7 @@ func newModel(systemPrompt string, sess *session.ChatSession) model {
 	telemetry.ModelName = "unknown"
 
 	statusBar := NewStatusBar(telemetry)
-	inspectPanel := NewInspectPanel()
+	inspectPanel := NewInspectPanel(telemetry)
 	layout := NewLayout()
 
 	return model{
@@ -254,7 +254,11 @@ func (m model) View() string {
 	metrics := selfmodel.ComputeLawMetrics(m.systemPrompt)
 	m.statusBar.UpdateMetrics(metrics.RuleLines, metrics.ConstraintCount)
 
-	// Update telemetry status based on chat session
+	// Update inspect panel metrics
+	m.inspectPanel.UpdateMetrics(metrics.RuleLines, metrics.ConstraintCount)
+	m.inspectPanel.SetGuardrails(true)
+
+	// Update telemetry status and capabilities based on chat session
 	if m.chatSession != nil && m.chatSession.Permissions != nil {
 		perms := m.chatSession.Permissions
 		if perms.FSRead && perms.FSWrite {
@@ -262,6 +266,23 @@ func (m model) View() string {
 		} else if perms.FSRead || perms.FSWrite {
 			m.telemetry.UpdateStatus("ACTIVE")
 		}
+
+		// Update capabilities
+		caps := &Capabilities{
+			ToolsEnabled:      true,
+			FilesystemAllowed: perms.FSRead || perms.FSWrite,
+			FilesystemStatus:  "denied",
+			NetworkAllowed:    false,
+			NetworkStatus:     "denied",
+		}
+
+		if perms.FSRead && perms.FSWrite {
+			caps.FilesystemStatus = "allowed"
+		} else if perms.FSRead {
+			caps.FilesystemStatus = "read-only"
+		}
+
+		m.inspectPanel.UpdateCapabilities(caps)
 	}
 
 	// Update memory count
@@ -272,8 +293,8 @@ func (m model) View() string {
 	// Render output stream (left side)
 	outputStream := m.renderOutputStream()
 
-	// Render inspect panel (right side)
-	inspectPanel := m.inspectPanel.Render()
+	// Render inspect panel (right side) with system prompt
+	inspectPanel := m.inspectPanel.Render(m.systemPrompt)
 
 	// Combine horizontally using lipgloss
 	topRegion := lipgloss.JoinHorizontal(
