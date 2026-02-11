@@ -39,11 +39,11 @@ func TestModelQuitOnEscape(t *testing.T) {
 	m := newModel("test", nil)
 	m.ready = true
 
-	msg := tea.KeyMsg{Type: tea.KeyEsc}
+	msg := tea.KeyMsg{Type: tea.KeyCtrlQ}
 	updatedModel, cmd := m.Update(msg)
 
 	if cmd == nil {
-		t.Error("expected Quit command on Esc")
+		t.Error("expected Quit command on Ctrl+Q")
 	}
 
 	if _, ok := updatedModel.(model); !ok {

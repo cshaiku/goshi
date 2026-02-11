@@ -173,7 +173,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
-		case tea.KeyCtrlC, tea.KeyEsc:
+		case tea.KeyCtrlC, tea.KeyCtrlQ:
 			return m, tea.Quit
 		case tea.KeyEnter:
 			// Send message only when focused on input
@@ -602,7 +602,7 @@ func executeTool(sess *session.ChatSession, action *llm.ActionCall) tea.Cmd {
 func (m *model) updateViewportContent() {
 	var sb strings.Builder
 
-	sb.WriteString(styleWelcome("Welcome to Goshi TUI\n\nCommands:\n  Ctrl+S - Send message\n  Ctrl+C/Esc - Quit\n  ↑/↓ - Scroll chat\n"))
+	sb.WriteString(styleWelcome("Welcome to Goshi TUI\n\nCommands:\n  Enter - Send message\n  Ctrl+C/Ctrl+Q - Quit\n  ↑/↓ - Scroll chat\n"))
 	sb.WriteString("\n")
 
 	if m.streaming {
@@ -806,7 +806,7 @@ func (m *model) AccessibilityDescription() string {
 	return fmt.Sprintf(
 		"Goshi TUI. Current mode: %s. Toggles: Dry Run %s, Deterministic %s. "+
 			"Focus: Use Tab to cycle between output stream, inspect panel, and input area. "+
-			"Commands: Enter to send, Ctrl+L to change mode, Ctrl+D/T to toggle, Escape to quit.",
+			"Commands: Enter to send, Ctrl+L to change mode, Ctrl+D/T to toggle, Ctrl+Q to quit.",
 		m.mode.String(),
 		func() string {
 			if m.toggles.DryRun {
