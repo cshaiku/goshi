@@ -10,6 +10,7 @@ import (
 	"github.com/cshaiku/goshi/internal/config"
 	"github.com/cshaiku/goshi/internal/detect"
 	"github.com/cshaiku/goshi/internal/diagnose"
+	"github.com/cshaiku/goshi/internal/diagnostics/modules"
 	"gopkg.in/yaml.v3"
 )
 
@@ -93,6 +94,11 @@ SEE ALSO:
 			if err != nil {
 				return err
 			}
+
+			// --- module diagnostics ---
+			modDiag := modules.NewModuleDiagnostic()
+			modIssues := modDiag.Run()
+			diag.Issues = append(diag.Issues, modIssues...)
 
 			// Output format selection
 			outFmt := format

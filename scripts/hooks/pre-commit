@@ -1,0 +1,53 @@
+#!/bin/bash
+# Git pre-commit hook
+# Runs checks before allowing a commit
+
+set -e
+
+echo "🔍 Running pre-commit checks..."
+echo ""
+
+# 1. Run tests
+echo "[1/4] Running tests..."
+if ! go test ./... -short 2>&1 | tail -3; then
+    echo ""
+    echo "❌ Tests failed! Commit aborted."
+    exit 1
+fi
+echo "  ✅ Tests passed"
+echo ""
+
+# 2. Run go vet
+echo "[2/4] Running go vet..."
+if ! go vet ./... 2>&1; then
+    echo ""
+    echo "❌ Go vet found issues! Commit aborted."
+    exit 1
+fi
+echo "  ✅ Go vet passed"
+echo ""
+
+# 3. Check go mod tidy
+echo "[3/4] Checking go.mod/go.sum..."
+if ! go mod tidy -diff 2>&1 | head -5; then
+    go mod tidy
+    echo "  ⚠️  go.mod/go.sum updated - please review and commit"
+    exit 1
+fi
+echo "  ✅ Modules are tidy"
+echo ""
+
+# 4. Format check
+echo "[4/4] Checking code formatting..."
+UNFORMATTED=$(gofmt -l . 2>&1 | grep -v "^vendor/" | grep ".go$" || true)
+if [ -n "$UNFORMATTED" ]; then
+    echo "  ⚠️  The following files need formatting:"
+    echo "$UNFORMATTED"
+    echo ""
+    echo "  Run: gofmt -w ."
+    exit 1
+fi
+echo "  ✅ Code is formatted"
+echo ""
+
+echo "✅ All pre-commit checks passed!"
