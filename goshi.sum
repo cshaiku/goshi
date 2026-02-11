@@ -1,9 +1,9 @@
 # goshi.sum - Source Code Integrity Manifest
-# Generated: 2026-02-11T06:34:15Z
-# Git Commit: 1d996d2951ec370005bf90133c3d5759a84d43c4
+# Generated: 2026-02-11T06:35:25Z
+# Git Commit: 31c5c90ec331d0b1755038d98b27a5f17ca144a1
 # Git Branch: main
 # Git Tag: none
-# Go Version: go1.25.6
+# Go Version: go1.24.12
 #
 # Format: <algorithm> <hash> <file>
 # Algorithm: SHA256
@@ -137,7 +137,7 @@ SHA256 5fa052604bfab2dca8a68be4e087cb59d9243992819c76d9812437e38e846756 internal
 SHA256 074f57a468e0f79efd0b25677dbfa874e25e7b4231517c9566da4bbafda7cdcb internal/tui/layout.go
 SHA256 90fde81077bfc419e857f39ebb0e0e4dd33a53b66a8906d5c2fd06be23625360 internal/tui/status_bar.go
 SHA256 d1677f7487f056dd7c001bfc8f1edabba05fc8b35cc8aad30320d416439a2a7a internal/tui/telemetry.go
-SHA256 ef2473e3177fe76374c953e6cfeb05c5c3657357e4b6e9bcd85525ac173dd20e internal/tui/tui.go
+SHA256 2ef4b436cdcf02e1fec2737adf9374f76d53f1fa19f7270876cd937a665327e3 internal/tui/tui.go
 SHA256 e0143ccf346366187e3831bad909d6cef319cc95e64d97e7752fd1eeb32a666f internal/tui/tui_test.go
 SHA256 7217da49c563b5ed7082d7c0342e1630cdeb4d8370f600f8c9d96522bd646ede internal/verify/basic.go
 SHA256 9ce91075d3da46127aad81be526c41899a988602c3522811361eacb09216238b internal/verify/basic_test.go
@@ -149,6 +149,6 @@ SHA256 ca34e9ed0933aadbe75fb21fee80b2a0c455620feff010adff4fefe9de0a8e91 go.sum
 # Summary:
 # - Source files: 129
 # - Total hashes: 131
-# - Generated: 2026-02-11T06:34:15Z
-# - Commit: 1d996d2951ec370005bf90133c3d5759a84d43c4
+# - Generated: 2026-02-11T06:35:25Z
+# - Commit: 31c5c90ec331d0b1755038d98b27a5f17ca144a1
 #
