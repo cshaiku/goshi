@@ -4,6 +4,15 @@ All notable changes to goshi are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Planned
+- Enhanced LLM backend selection and fallback logic
+- Extended tool registry with custom tool registration
+- Multi-session conversation management
+
+---
+
+## [1.3.0] - 2026-02-10
+
 ### Added
 - **Source Integrity Diagnostics** — Offensive security testing framework for validating goshi.sum integrity checking
   - `IntegrityDiagnostic` package with SHA256 file verification against manifest
@@ -20,10 +29,16 @@ All notable changes to goshi are documented in this file. The format is based on
   - CLI reader: `goshi audit` with filters and JSON/YAML export
   - Documentation: [docs/AUDIT_LOGS_DESIGN.md](docs/AUDIT_LOGS_DESIGN.md)
 
-### Planned
-- Enhanced LLM backend selection and fallback logic
-- Extended tool registry with custom tool registration
-- Multi-session conversation management
+- **GitHub Install (Quick Clone)** — Copy/paste clone instructions in README
+- **README Table of Contents** — Collapsible, section-linked navigation
+
+### Changed
+- **Documentation Layout** — Core markdown docs moved to docs/ (README stays at repo root)
+- **Scripts Organization** — Integration scripts moved under scripts/
+- **README Wording** — Updated to reflect current-state language (no phase references)
+
+### Fixed
+- **CI Offensive Tests** — Restore goshi.sum after offensive tests to keep repo clean
 
 ---
 
