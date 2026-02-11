@@ -1,6 +1,6 @@
 # goshi.sum - Source Code Integrity Manifest
-# Generated: 2026-02-11T06:03:46Z
-# Git Commit: 178a5d3e3a6009692fc33f6ea50a6d1b5d0e2696
+# Generated: 2026-02-11T06:06:32Z
+# Git Commit: 40e2bea7822dd8de909541957c50cbc16be30ec6
 # Git Branch: main
 # Git Tag: none
 # Go Version: go1.24.12
@@ -33,7 +33,7 @@ SHA256 e20cf8491663d88907409bc72a4bee8860a35484b4be2cd18f2b324ef1cd4dbe internal
 SHA256 3d614df78a2928d6ee5aa74dbdb61274d5abd819a721b1597b3f0f78aa712533 internal/cli/backend_factory.go
 SHA256 e5c952b1f46a40d88ee6c19c64c3170999a6bdf130d5fea6e2b83580757fe3c5 internal/cli/chat.go
 SHA256 b59b03608781083c20ae5acda274ef1a2cc29453cfe5a1ae3ef731b3d6a4700a internal/cli/chat_integration_test.go
-SHA256 0fc17a72b5ea22c452ec1aca32197376c9a6c3a8607d702d4ebc6c3e19afa687 internal/cli/config_cmd.go
+SHA256 814d737bc3611c1a2123f76877a3f57c1bad4053bb7ae5a0cab9f073b371c252 internal/cli/config_cmd.go
 SHA256 865b39b71c5eb4fad7d2972ceb55fcaf9aee870c4d289618acfb4b89597f5893 internal/cli/diagnostics.go
 SHA256 5f94b19febe0bea83970c7d65b4f93e8037316f73468cdccd0b35887ae748cc3 internal/cli/display.go
 SHA256 f7647020e14bbff3754c35dab11eb63268b1521f76543e55356f5c801e677742 internal/cli/doctor.go
@@ -44,7 +44,7 @@ SHA256 30ad2fc9cd5335537f7b2403aa4707c6a1b508d37934b91efd49601bd44e7a48 internal
 SHA256 419beac5569e0e396c7c15a0435e3b9beeffae255411d6c6e0edc58b61971b0d internal/cli/permission_handler.go
 SHA256 c91d320bfb266a78872f0c939877ce8ce430caebf3f75ac58802444f6c28d1c6 internal/cli/root.go
 SHA256 e77ebe4c53426003da4f49304e940dfffbf3dfad969870d9eb17c6644a8b9f52 internal/cli/system_prompt.go
-SHA256 b9cff4d7f1ce45c21a305f1f9d550a5a7109d51cd436d5408968c65db978aed6 internal/config/config.go
+SHA256 b18dcdaccb45608e8c357dd74c913c6a6832356495a48c249de09d4a7d27cc36 internal/config/config.go
 SHA256 23b1a08f7b8fa579fa036ce4980b71d0c0e33345d1431a77469df9eafbd05ec3 internal/config/config_test.go
 SHA256 c81a3337e596a7c048d2d13dcdafc0fa2db471e9a9a76e6048cb44e3cd84aaa2 internal/detect/basic.go
 SHA256 6c214fc828a8d7e4d63fe14760137b29933b5e521ad53e942f2a80d5624574b7 internal/detect/basic_test.go
@@ -148,6 +148,6 @@ SHA256 ca34e9ed0933aadbe75fb21fee80b2a0c455620feff010adff4fefe9de0a8e91 go.sum
 # Summary:
 # - Source files: 128
 # - Total hashes: 130
-# - Generated: 2026-02-11T06:03:46Z
-# - Commit: 178a5d3e3a6009692fc33f6ea50a6d1b5d0e2696
+# - Generated: 2026-02-11T06:06:32Z
+# - Commit: 40e2bea7822dd8de909541957c50cbc16be30ec6
 #
