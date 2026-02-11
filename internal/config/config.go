@@ -74,15 +74,15 @@ type Config struct {
 var cachedConfig *Config
 
 // LoadDefaults returns a Config with safe defaults
-// Available Ollama models:
-//   - qwen3:8b-q8_0 (recommended, 8.9GB, high quality)
-//   - llama3:latest (4.7GB, good general purpose)
-//   - llama3.1:8b (4.9GB, newer version)
+// Available Ollama models (performance ranked for TUI):
+//   - llama3.1:8b (RECOMMENDED for TUI - 4.9GB, ~0.19s cached response)
+//   - llama3:latest (4.3GB, ~0.20s cached response)
 //   - qwen2.5-coder:1.5b-base (986MB, code specialized)
+//   - qwen3:8b-q8_0 (8.2GB, high quality but 38s+ on first load)
 func LoadDefaults() Config {
 	return Config{
 		LLM: LLMConfig{
-			Model:          "qwen3:8b-q8_0",
+			Model:          "llama3.1:8b",
 			Provider:       "ollama",
 			Temperature:    0,
 			MaxTokens:      4096,

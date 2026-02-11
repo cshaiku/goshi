@@ -172,24 +172,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		// Handle string keys for single character inputs
-		if msg.Type == tea.KeyRunes && len(msg.Runes) > 0 {
-			switch msg.Runes[0] {
-			case 'a', 'A':
-				// Toggle audit panel
-				m.auditPanelVisible = !m.auditPanelVisible
-				m.layout.AuditPanelVisible = m.auditPanelVisible
-				// Reset focus if toggling off
-				if !m.auditPanelVisible && m.focusedRegion == FocusAuditPanel {
-					m.focusedRegion = FocusInput
-				}
-				return m, nil
-			}
-		}
-
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
+		case tea.KeyCtrlA:
+			// Toggle audit panel
+			m.auditPanelVisible = !m.auditPanelVisible
+			m.layout.AuditPanelVisible = m.auditPanelVisible
+			// Reset focus if toggling off
+			if !m.auditPanelVisible && m.focusedRegion == FocusAuditPanel {
+				m.focusedRegion = FocusInput
+			}
+			return m, nil
 		case tea.KeyCtrlS:
 			return m.handleSendMessage()
 		case tea.KeyCtrlM:
@@ -674,13 +668,13 @@ func (m model) renderInput() string {
 	// Audit panel indicator
 	auditDisplay := ""
 	if m.auditPanelVisible {
-		auditDisplay = " │ Audit: ✓ (press 'A' to hide)"
+		auditDisplay = " │ Audit: ✓ (Ctrl+A to hide)"
 	} else {
-		auditDisplay = " │ Audit: ○ (press 'A' to show)"
+		auditDisplay = " │ Audit: ○ (Ctrl+A to show)"
 	}
 
 	return fmt.Sprintf(
-		"┌─ Input (Ctrl+S to send, Tab to cycle focus, Ctrl+D/T for toggles, A to toggle audit)%s%s%s%s\n%s",
+		"┌─ Input (Ctrl+S to send, Tab to cycle focus, Ctrl+D/T for toggles, Ctrl+A for audit)%s%s%s%s\n%s",
 		focusIndicator,
 		modeDisplay,
 		toglesDisplay,

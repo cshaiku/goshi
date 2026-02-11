@@ -4,9 +4,13 @@
 # LLM Configuration
 llm:
   # Model to use - depends on provider
-  # For Ollama: "qwen3:8b-q8_0", "llama2", "neural-chat", etc.
+  # For Ollama (performance ranking):
+  #   - llama3.1:8b (recommended for TUI - fast, 0.19s cached)
+  #   - llama3:latest (alternative, 4.3GB)
+  #   - qwen2.5-coder:1.5b (code specialized, smallest)
+  #   - qwen3:8b-q8_0 (slow on first load, best quality, 38s+ initial)
   # For OpenAI: "gpt-4", "gpt-3.5-turbo", etc.
-  model: "qwen3:8b-q8_0"
+  model: "llama3.1:8b"
   
   # LLM Provider backend
   # Options: "ollama", "openai", "auto" (auto-detect)
