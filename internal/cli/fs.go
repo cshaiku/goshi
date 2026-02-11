@@ -181,7 +181,7 @@ EXAMPLES:
 
   $ cat template.txt | goshi fs write out/generated.txt
 
-  $ goshi fs write config.yaml < new-config.yml
+	$ goshi fs write goshi.yaml < new-config.yml
 
 EXIT CODES:
   0   - Success: Write proposal created

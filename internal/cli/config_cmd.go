@@ -197,7 +197,7 @@ func newConfigInitCommand() *cobra.Command {
 		Short: "Generate a default configuration file",
 		Long: `Generate a default configuration file template.
 
-Creates a well-commented config.yaml file with all available options
+Creates a well-commented configuration file with all available options
 and sensible defaults. Can write to:
 	- Current directory (.goshi.yaml)
 	- Home directory (~/.goshi/config.yaml)

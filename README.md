@@ -359,7 +359,7 @@ ollama pull qwen3:8b-q8_0
 ./goshi chat
 ```
 
-**Configuration** (`goshi.yaml` or `config.yaml`):
+**Configuration** (`goshi.yaml` or `.goshi.yaml`):
 ```yaml
 llm:
   provider: ollama  # or "auto" to auto-detect
@@ -421,7 +421,7 @@ export OPENAI_ORG_ID='org-...'
 **Provider Selection:**
 ```bash
 # Explicit provider via config
-vim config.yaml  # Set provider: openai
+vim goshi.yaml  # Set provider: openai
 
 # Or via environment variable
 export GOSHI_LLM_PROVIDER=openai
