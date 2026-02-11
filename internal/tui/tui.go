@@ -585,6 +585,97 @@ func (m model) renderInput() string {
 	)
 }
 
+// CodeBlock represents a collapsible code block in the output
+type CodeBlock struct {
+	Language  string
+	Content   string
+	Collapsed bool // Whether the block is collapsed
+	LineCount int
+}
+
+// IsCodeBlock checks if text contains a code block marker
+func IsCodeBlock(text string) bool {
+	return strings.Contains(text, "```")
+}
+
+// ExtractCodeBlocks parses code blocks from text
+func ExtractCodeBlocks(text string) []CodeBlock {
+	var blocks []CodeBlock
+	lines := strings.Split(text, "\n")
+
+	var inBlock bool
+	var language string
+	var content strings.Builder
+
+	for i := 0; i < len(lines); i++ {
+		line := lines[i]
+
+		if strings.HasPrefix(line, "```") {
+			if inBlock {
+				// End of block
+				lineCount := strings.Count(content.String(), "\n") + 1
+				if lineCount > 5 { // Collapse if more than 5 lines
+					blocks = append(blocks, CodeBlock{
+						Language:  language,
+						Content:   content.String(),
+						Collapsed: true,
+						LineCount: lineCount,
+					})
+				} else {
+					blocks = append(blocks, CodeBlock{
+						Language:  language,
+						Content:   content.String(),
+						Collapsed: false,
+						LineCount: lineCount,
+					})
+				}
+				content.Reset()
+				inBlock = false
+				language = ""
+			} else {
+				// Start of block
+				inBlock = true
+				language = strings.TrimPrefix(line, "```")
+			}
+		} else if inBlock {
+			content.WriteString(line + "\n")
+		}
+	}
+
+	return blocks
+}
+
+// RenderCodeBlock renders a code block with collapse support
+func (cb *CodeBlock) Render() string {
+	style := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("240")).
+		Padding(0, 1)
+
+	langLabel := ""
+	if cb.Language != "" {
+		langLabel = fmt.Sprintf(" [%s]", cb.Language)
+	}
+
+	if cb.Collapsed {
+		// Show collapse indicator with line count, no content
+		header := fmt.Sprintf("📦 Code Block%s (%d lines) - Press 'C' to expand", langLabel, cb.LineCount)
+		return style.Render(header)
+	} else {
+		// Show expanded content
+		header := fmt.Sprintf("📦 Code Block%s (%d lines) - Press 'C' to collapse", langLabel, cb.LineCount)
+		content := strings.TrimRight(cb.Content, "\n") // Remove trailing newline
+		return style.Render(header + "\n" + content)
+	}
+}
+
+// ToggleCollapse toggles the collapsed state
+func (cb *CodeBlock) ToggleCollapse() {
+	if cb.LineCount > 5 { // Only allow collapsing if more than 5 lines
+		cb.Collapsed = !cb.Collapsed
+	}
+}
+
 // renderOutputStream renders the main output stream (left region)
 func (m model) renderOutputStream() string {
 	// Create a border with focus indicator

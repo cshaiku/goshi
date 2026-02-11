@@ -817,6 +817,95 @@ func TestTogglesIndependent(t *testing.T) {
 	}
 }
 
+// Phase 3: Collapsible Code Blocks Tests
+
+func TestCodeBlockDetection(t *testing.T) {
+	tests := []struct {
+		name     string
+		text     string
+		expected bool
+	}{
+		{"with code block", "Some text\n```go\ncode\n```", true},
+		{"without code block", "Just plain text", false},
+		{"multiple code blocks", "```\ncode1\n```\ntext\n```\ncode2\n```", true},
+	}
+
+	for _, tt := range tests {
+		if IsCodeBlock(tt.text) != tt.expected {
+			t.Errorf("%s: expected %v, got %v", tt.name, tt.expected, IsCodeBlock(tt.text))
+		}
+	}
+}
+
+func TestExtractCodeBlocks(t *testing.T) {
+	text := "Some text\n```go\nfunc main() {\n  fmt.Println(\"hello\")\n}\n```\nMore text"
+	blocks := ExtractCodeBlocks(text)
+
+	if len(blocks) != 1 {
+		t.Errorf("expected 1 code block, got %d", len(blocks))
+	}
+
+	if len(blocks) > 0 {
+		if blocks[0].Language != "go" {
+			t.Errorf("expected language 'go', got %q", blocks[0].Language)
+		}
+		if blocks[0].LineCount != 4 {
+			t.Errorf("expected 4 lines, got %d", blocks[0].LineCount)
+		}
+	}
+}
+
+func TestCodeBlockCollapse(t *testing.T) {
+	// Short block (should not collapse)
+	shortBlock := CodeBlock{Language: "go", Content: "x := 1\n", LineCount: 1}
+	shortBlock.ToggleCollapse()
+	if shortBlock.Collapsed {
+		t.Error("expected short block to not collapse")
+	}
+
+	// Long block (should collapse)
+	longBlock := CodeBlock{
+		Language:  "go",
+		Content:   "line1\nline2\nline3\nline4\nline5\nline6\n",
+		LineCount: 6,
+		Collapsed: false,
+	}
+	longBlock.ToggleCollapse()
+	if !longBlock.Collapsed {
+		t.Error("expected long block to be collapsible")
+	}
+
+	// Toggle again
+	longBlock.ToggleCollapse()
+	if longBlock.Collapsed {
+		t.Error("expected long block to expand after second toggle")
+	}
+}
+
+func TestCodeBlockRender(t *testing.T) {
+	// Collapsed block
+	collapsedBlock := CodeBlock{
+		Language:  "python",
+		Content:   strings.Repeat("line\n", 10),
+		LineCount: 10,
+		Collapsed: true,
+	}
+	rendered := collapsedBlock.Render()
+	if !strings.Contains(rendered, "expand") {
+		t.Error("expected expand instruction in collapsed block")
+	}
+	if strings.Contains(rendered, "collapse") {
+		t.Error("did not expect collapse instruction in collapsed block")
+	}
+
+	// Expanded block
+	collapsedBlock.Collapsed = false
+	rendered = collapsedBlock.Render()
+	if !strings.Contains(rendered, "collapse") {
+		t.Error("expected collapse instruction in expanded block")
+	}
+}
+
 func TestMultipleRolesInOutput(t *testing.T) {
 	m := newModel("test", nil)
 	m.messages = []Message{
