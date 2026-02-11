@@ -122,8 +122,16 @@ jobs:
           chmod +x scripts/generate_goshi_sum.sh
           bash scripts/generate_goshi_sum.sh
 
+      - name: Snapshot goshi.sum before tests
+        run: cp goshi.sum goshi.sum.bak
+
       - name: Run offensive security tests
         run: go test -tags=offensive -v ./internal/diagnostics/integrity/
+
+      - name: Restore goshi.sum after tests
+        run: |
+          mv goshi.sum.bak goshi.sum
+          git status --porcelain goshi.sum
 
       - name: Verify repository is clean after tests
         run: |
