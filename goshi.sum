@@ -1,6 +1,6 @@
 # goshi.sum - Source Code Integrity Manifest
-# Generated: 2026-02-11T06:56:15Z
-# Git Commit: 33ed018626fce84fd965cecaf96880c066f19992
+# Generated: 2026-02-11T17:29:44Z
+# Git Commit: a9603d37cd131cfc7ff89f8608dc660dbcb5fc27
 # Git Branch: main
 # Git Tag: none
 # Go Version: go1.24.12
@@ -133,12 +133,13 @@ SHA256 955c4fde6da91379a6b3a9695459c3df0b4f1b557d62e5c10c3350649302abe7 internal
 SHA256 998379d4b64a8ed34060115f7b4cffebb9e58028e4f59480f80c535e67e7774e internal/session/session.go
 SHA256 931652e24c5f054f890926dffed987f459da7ccf15d9b82f4a2454c51993dae5 internal/session/session_test.go
 SHA256 af8663e7fd98ae0b221135c85aa802fb3a9351b808f5cccf316ff1599d2b790f internal/tui/audit_panel.go
+SHA256 4c493762807288f94c87a5912836122301b5b960ba52dea889cac941af2b4d0d internal/tui/help_panel.go
 SHA256 5fa052604bfab2dca8a68be4e087cb59d9243992819c76d9812437e38e846756 internal/tui/inspect_panel.go
 SHA256 074f57a468e0f79efd0b25677dbfa874e25e7b4231517c9566da4bbafda7cdcb internal/tui/layout.go
 SHA256 90fde81077bfc419e857f39ebb0e0e4dd33a53b66a8906d5c2fd06be23625360 internal/tui/status_bar.go
 SHA256 d1677f7487f056dd7c001bfc8f1edabba05fc8b35cc8aad30320d416439a2a7a internal/tui/telemetry.go
-SHA256 98a5ffe14520edbc20b23c175697d880ad2187c51bbfb7b7589f8e4539d043fb internal/tui/tui.go
-SHA256 3e589443f812ffb003f9bead877484010bd82fa60125eb39f84e3f13819c0db1 internal/tui/tui_test.go
+SHA256 d3ac2e36eaa9b79a8833f66fa7388df8aab6c085e1a574115cc82dd79cadf1b9 internal/tui/tui.go
+SHA256 96e3ba02b024f8662a471626017c39fe3a70b7ce197bf6431ad883e397df3a75 internal/tui/tui_test.go
 SHA256 7217da49c563b5ed7082d7c0342e1630cdeb4d8370f600f8c9d96522bd646ede internal/verify/basic.go
 SHA256 9ce91075d3da46127aad81be526c41899a988602c3522811361eacb09216238b internal/verify/basic_test.go
 SHA256 6a777bb84a90855b7110eac01a3764d6f72744dd38d64a588e81b22630f5845d internal/verify/result.go
@@ -147,8 +148,8 @@ SHA256 30eaf8b2fe4249f6d8831048eea30892f2f25c3ca3232bc30e951a914a504c00 go.mod
 SHA256 ca34e9ed0933aadbe75fb21fee80b2a0c455620feff010adff4fefe9de0a8e91 go.sum
 #
 # Summary:
-# - Source files: 129
-# - Total hashes: 131
-# - Generated: 2026-02-11T06:56:15Z
-# - Commit: 33ed018626fce84fd965cecaf96880c066f19992
+# - Source files: 130
+# - Total hashes: 132
+# - Generated: 2026-02-11T17:29:44Z
+# - Commit: a9603d37cd131cfc7ff89f8608dc660dbcb5fc27
 #
