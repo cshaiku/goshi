@@ -98,7 +98,7 @@ threat_awareness_and_safety: >
   - A tool for operating on arbitrary system environments
   - An autonomous system that makes decisions without user visibility
   
-  See `goshi.threat.model.md` for detailed threat analysis and mitigations.
+  See `docs/goshi.threat.model.md` for detailed threat analysis and mitigations.
   
   Users should always:
   - Review proposals before applying them

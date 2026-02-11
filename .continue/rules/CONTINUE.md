@@ -66,7 +66,7 @@ goshi/
 - `main.go`: Application entry point
 - `goshi.yaml`: Main configuration file
 - `goshi.self.model.yaml`: Self-model configuration
-- `goshi.threat.model.md`: Security threat model
+- `docs/goshi.threat.model.md`: Security threat model
 
 ### Configuration
 Default configuration can be overridden through:
@@ -124,10 +124,10 @@ go test ./...
 - Check ~/.goshi/cache/ for cached data
 
 ## References
-- [Project Changelog](CHANGELOG.md)
-- [Migration Guide](MIGRATION.md)
-- [LLM Integration](LLM_INTEGRATION.md)
-- [Threat Model](goshi.threat.model.md)
+- [Project Changelog](../../docs/CHANGELOG.md)
+- [Migration Guide](../../docs/MIGRATION.md)
+- [LLM Integration](../../docs/LLM_INTEGRATION.md)
+- [Threat Model](../../docs/goshi.threat.model.md)
 
 ---
 *Note: This documentation is maintained by the Continue extension and may be updated automatically based on project changes.*

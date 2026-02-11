@@ -293,7 +293,7 @@ fail_closed_semantics:
     fatal: "3 - Invariant violation, execution halted immediately"
 
 threat_model_architecture:
-  design_reference: "goshi.threat.model.md"
+  design_reference: "docs/goshi.threat.model.md"
   note: "All threats below are designed to be mitigated by code-level enforcement"
   mitigations:
     - threat: "T1: Scope Escalation"

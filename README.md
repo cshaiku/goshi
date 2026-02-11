@@ -428,7 +428,7 @@ export GOSHI_LLM_PROVIDER=auto
 - **Circuit Breaker**: Auto-recovery from failures, 3-state protection
 - **Connection Pooling**: Shared HTTP client, keep-alive, configurable limits
 
-For full LLM integration details, see [LLM_INTEGRATION.md](LLM_INTEGRATION.md).
+For full LLM integration details, see [docs/LLM_INTEGRATION.md](docs/LLM_INTEGRATION.md).
 
 ---
 

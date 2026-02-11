@@ -137,7 +137,7 @@ Add optimization features for cost control, reliability, and performance of Open
 - Add troubleshooting guide for OpenAI errors
 - Cost estimation examples
 
-**File**: `LLM_INTEGRATION.md`
+**File**: `docs/LLM_INTEGRATION.md`
 - Add "OpenAI Backend Architecture" section
 - Document cost tracking API
 - Explain circuit breaker behavior

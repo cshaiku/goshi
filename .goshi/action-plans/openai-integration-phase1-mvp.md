@@ -47,7 +47,7 @@ Implement basic OpenAI backend to enable cloud LLM support alongside Ollama, res
 - Document OPENAI_API_KEY environment variable
 - Add usage examples
 
-**File**: `LLM_INTEGRATION.md`
+**File**: `docs/LLM_INTEGRATION.md`
 - Add OpenAI backend examples
 - Document differences between Ollama and OpenAI backends
 

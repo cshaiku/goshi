@@ -294,12 +294,12 @@ Potential additions to the offensive testing framework:
 ## Related Documentation
 
 - [Contributing Guide](../CONTRIBUTING.md)
-- [Threat Model](../goshi.threat.model.md)
+- [Threat Model](goshi.threat.model.md)
 - [Self Model](../goshi.self.model.yaml)
-- [LLM Integration](../LLM_INTEGRATION.md)
+- [LLM Integration](LLM_INTEGRATION.md)
 
 ## Contact
 
 For security concerns or questions about offensive testing:
 - Open an issue: https://github.com/cshaiku/goshi/issues
-- Review threat model: [goshi.threat.model.md](../goshi.threat.model.md)
+- Review threat model: [goshi.threat.model.md](goshi.threat.model.md)

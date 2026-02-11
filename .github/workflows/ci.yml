@@ -234,8 +234,8 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           
           # Extract changelog for this version
-          if [ -f CHANGELOG.md ]; then
-            sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$ d' > release_notes.md
+          if [ -f docs/CHANGELOG.md ]; then
+            sed -n "/## \[$VERSION\]/,/## \[/p" docs/CHANGELOG.md | sed '$ d' > release_notes.md
           else
             echo "Release $VERSION" > release_notes.md
           fi

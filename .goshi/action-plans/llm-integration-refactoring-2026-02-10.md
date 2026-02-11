@@ -128,7 +128,7 @@ Current goshi LLM integration suffers from architectural inconsistencies that un
 ## Related Documents
 
 - `goshi.self.model.yaml` — Safety invariants and fail-closed semantics
-- `goshi.threat.model.md` — T5 (Behavior Drift) directly addressed by this refactoring
+- `docs/goshi.threat.model.md` — T5 (Behavior Drift) directly addressed by this refactoring
 - Individual action plans in `.goshi/action-plans/llm-*`
 
 ---
