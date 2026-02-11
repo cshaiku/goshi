@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"fmt"
 
+	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -11,6 +13,10 @@ import (
 type InspectPanel struct {
 	width  int
 	height int
+
+	// Scrolling support
+	viewport viewport.Model
+	ready    bool
 
 	// Data sources
 	telemetry    *Telemetry
@@ -31,8 +37,11 @@ type Capabilities struct {
 
 // NewInspectPanel creates a new inspect panel
 func NewInspectPanel(telemetry *Telemetry) *InspectPanel {
+	vp := viewport.New(30, 20)
 	return &InspectPanel{
 		telemetry: telemetry,
+		viewport:  vp,
+		ready:     false,
 		capabilities: &Capabilities{
 			ToolsEnabled:      true,
 			FilesystemAllowed: false,
@@ -47,6 +56,27 @@ func NewInspectPanel(telemetry *Telemetry) *InspectPanel {
 func (p *InspectPanel) SetSize(width, height int) {
 	p.width = width
 	p.height = height
+
+	// Update viewport size (account for border and padding)
+	contentWidth := width - 4
+	contentHeight := height - 2
+	if contentWidth < 10 {
+		contentWidth = 10
+	}
+	if contentHeight < 5 {
+		contentHeight = 5
+	}
+
+	p.viewport.Width = contentWidth
+	p.viewport.Height = contentHeight
+	p.ready = true
+}
+
+// Update handles viewport scrolling messages
+func (p *InspectPanel) Update(msg tea.Msg) tea.Cmd {
+	var cmd tea.Cmd
+	p.viewport, cmd = p.viewport.Update(msg)
+	return cmd
 }
 
 // UpdateMetrics updates law and constraint counts
@@ -74,21 +104,28 @@ func (p *InspectPanel) Render(systemPrompt string) string {
 		BorderForeground(lipgloss.Color("240")).
 		Padding(0, 1)
 
-	// Calculate available height for scrollable content
-	contentWidth := p.width - 4
-	if contentWidth < 10 {
-		contentWidth = 10
-	}
-
-	// Render all sections
+	// Render all sections as viewport content
 	content := p.renderHeader() + "\n\n" +
 		p.renderMemorySection() + "\n\n" +
 		p.renderPromptInfoSection(systemPrompt) + "\n\n" +
 		p.renderGuardrailsSection() + "\n\n" +
 		p.renderCapabilitiesSection()
 
-	// Apply border and sizing
-	styled := borderStyle.Width(contentWidth).Render(content)
+	// Update viewport content if ready
+	if p.ready {
+		p.viewport.SetContent(content)
+	}
+
+	// Get scrollable viewport view
+	viewportContent := p.viewport.View()
+
+	// Apply border to viewport
+	contentWidth := p.width - 4
+	if contentWidth < 10 {
+		contentWidth = 10
+	}
+
+	styled := borderStyle.Width(contentWidth).Render(viewportContent)
 	return styled
 }
 

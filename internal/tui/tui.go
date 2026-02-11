@@ -101,10 +101,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
 		taCmd tea.Cmd
 		vpCmd tea.Cmd
+		ipCmd tea.Cmd
 	)
 
 	m.textarea, taCmd = m.textarea.Update(msg)
-	m.viewport, vpCmd = m.viewport.Update(msg)
+
+	// Route viewport/scrolling updates based on focused region
+	if m.focusedRegion == FocusInspectPanel {
+		// Inspect panel is focused - handle scrolling there
+		ipCmd = m.inspectPanel.Update(msg)
+	} else {
+		// Output stream is focused - handle viewport scrolling
+		m.viewport, vpCmd = m.viewport.Update(msg)
+	}
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -242,7 +251,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	return m, tea.Batch(taCmd, vpCmd)
+	return m, tea.Batch(taCmd, vpCmd, ipCmd)
 }
 
 func (m model) View() string {

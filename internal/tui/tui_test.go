@@ -490,7 +490,7 @@ func TestInspectPanelGuardrails(t *testing.T) {
 func TestInspectPanelCapabilities(t *testing.T) {
 	telemetry := NewTelemetry()
 	panel := NewInspectPanel(telemetry)
-	panel.SetSize(30, 20)
+	panel.SetSize(30, 30) // Taller to show all sections
 
 	caps := &Capabilities{
 		ToolsEnabled:      true,
@@ -519,7 +519,7 @@ func TestInspectPanelCapabilities(t *testing.T) {
 func TestInspectPanelCapabilitiesReadOnly(t *testing.T) {
 	telemetry := NewTelemetry()
 	panel := NewInspectPanel(telemetry)
-	panel.SetSize(30, 20)
+	panel.SetSize(30, 30) // Taller to show all sections
 
 	caps := &Capabilities{
 		ToolsEnabled:      true,
@@ -560,5 +560,35 @@ func TestInspectPanelAllSections(t *testing.T) {
 		if !strings.Contains(rendered, section) {
 			t.Errorf("expected panel to contain %s section", section)
 		}
+	}
+}
+
+func TestInspectPanelScrolling(t *testing.T) {
+	telemetry := NewTelemetry()
+	panel := NewInspectPanel(telemetry)
+	
+	// Set small height to force scrolling
+	panel.SetSize(30, 15)
+	
+	// Render content (will be truncated by viewport)
+	rendered := panel.Render("scrolling test")
+	
+	// The panel should have content (even if truncated)
+	if len(rendered) == 0 {
+		t.Error("expected panel to have content")
+	}
+	
+	// Header should be visible at the top
+	if !strings.Contains(rendered, "INSPECT") {
+		t.Error("expected header to be visible")
+	}
+	
+	// Simulate scroll down (viewport Update with KeyDown)
+	panel.Update(tea.KeyMsg{Type: tea.KeyDown})
+	
+	// Panel should still render after scroll
+	rendered = panel.Render("scrolling test")
+	if len(rendered) == 0 {
+		t.Error("expected panel to have content after scroll")
 	}
 }
