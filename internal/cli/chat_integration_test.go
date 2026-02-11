@@ -9,9 +9,16 @@ import (
 	"testing"
 
 	"github.com/cshaiku/goshi/internal/app"
+	"github.com/cshaiku/goshi/internal/config"
 	"github.com/cshaiku/goshi/internal/llm"
 	"github.com/cshaiku/goshi/internal/session"
 )
+
+func TestMain(m *testing.M) {
+	os.Setenv("GOSHI_AUDIT_ENABLED", "false")
+	config.Reset()
+	os.Exit(m.Run())
+}
 
 // ==============================================================================
 // Mock LLM Backend for Deterministic Testing
@@ -76,6 +83,9 @@ func (e *MockStreamError) Temporary() bool { return false }
 
 // createTestDir creates a temporary directory for test files
 func createTestDir(t *testing.T) (string, func()) {
+	t.Setenv("GOSHI_AUDIT_ENABLED", "false")
+	config.Reset()
+
 	tmpDir, err := os.MkdirTemp("", "goshi-test-")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)

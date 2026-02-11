@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cshaiku/goshi/internal/config"
 	"github.com/cshaiku/goshi/internal/llm"
 )
 
@@ -47,21 +48,27 @@ func (e *MockStreamError) Error() string   { return "end of stream" }
 func (e *MockStreamError) Timeout() bool   { return false }
 func (e *MockStreamError) Temporary() bool { return false }
 
-func TestNewChatSession(t *testing.T) {
-	ctx := context.Background()
-	backend := &MockBackend{}
+func newTestSession(t *testing.T) *ChatSession {
+	t.Helper()
+	t.Setenv("GOSHI_AUDIT_ENABLED", "false")
+	config.Reset()
 
-	session, err := NewChatSession(ctx, "test system prompt", backend)
+	session, err := NewChatSession(context.Background(), "test", &MockBackend{})
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
+	return session
+}
+
+func TestNewChatSession(t *testing.T) {
+	session := newTestSession(t)
 
 	if session == nil {
 		t.Fatal("session is nil")
 	}
 
-	if session.SystemPrompt != "test system prompt" {
-		t.Errorf("expected system prompt 'test system prompt', got '%s'", session.SystemPrompt)
+	if session.SystemPrompt != "test" {
+		t.Errorf("expected system prompt 'test', got '%s'", session.SystemPrompt)
 	}
 
 	if session.Permissions == nil {
@@ -74,8 +81,7 @@ func TestNewChatSession(t *testing.T) {
 }
 
 func TestChatSession_AddUserMessage(t *testing.T) {
-	ctx := context.Background()
-	session, _ := NewChatSession(ctx, "test", &MockBackend{})
+	session := newTestSession(t)
 
 	session.AddUserMessage("Hello bot")
 
@@ -94,8 +100,7 @@ func TestChatSession_AddUserMessage(t *testing.T) {
 }
 
 func TestChatSession_GrantPermission(t *testing.T) {
-	ctx := context.Background()
-	session, _ := NewChatSession(ctx, "test", &MockBackend{})
+	session := newTestSession(t)
 
 	if session.HasPermission("FS_READ") {
 		t.Fatal("FS_READ should not be granted initially")
@@ -118,8 +123,7 @@ func TestChatSession_GrantPermission(t *testing.T) {
 }
 
 func TestChatSession_DenyPermission(t *testing.T) {
-	ctx := context.Background()
-	session, _ := NewChatSession(ctx, "test", &MockBackend{})
+	session := newTestSession(t)
 
 	session.DenyPermission("FS_WRITE")
 
@@ -134,8 +138,7 @@ func TestChatSession_DenyPermission(t *testing.T) {
 }
 
 func TestChatSession_GetAuditLog(t *testing.T) {
-	ctx := context.Background()
-	session, _ := NewChatSession(ctx, "test", &MockBackend{})
+	session := newTestSession(t)
 
 	session.GrantPermission("FS_READ")
 	session.DenyPermission("FS_WRITE")

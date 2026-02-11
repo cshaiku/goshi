@@ -128,6 +128,7 @@ func Execute(rt *Runtime) {
 	// Register all subcommands
 	rootCmd.AddCommand(
 		newFSCommand(),
+		newAuditCommand(),
 		newDoctorCmd(&cfg),
 		newHealCmd(&cfg),
 		newConfigCommand(),

@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/cshaiku/goshi/internal/audit"
 	"github.com/cshaiku/goshi/internal/config"
 	"github.com/manifoldco/promptui"
 )
@@ -23,6 +24,7 @@ type Permissions struct {
 	FSRead   bool
 	FSWrite  bool
 	AuditLog []PermissionEntry // Complete decision history
+	Logger   *audit.Logger
 }
 
 // Grant records a permission grant in the audit log
@@ -43,6 +45,9 @@ func (p *Permissions) Grant(capability string, cwd string) {
 	}
 
 	p.AuditLog = append(p.AuditLog, entry)
+	if p.Logger != nil {
+		p.Logger.LogPermission("GRANT", capability, entry.Reason, cwd)
+	}
 }
 
 // Deny records a permission denial in the audit log
@@ -55,6 +60,9 @@ func (p *Permissions) Deny(capability string, cwd string) {
 		RequestCwd: cwd,
 	}
 	p.AuditLog = append(p.AuditLog, entry)
+	if p.Logger != nil {
+		p.Logger.LogPermission("DENY", capability, entry.Reason, cwd)
+	}
 }
 
 // AutoConfirm grants a permission via auto-confirm mechanism
@@ -75,6 +83,9 @@ func (p *Permissions) AutoConfirm(capability string, cwd string) {
 	}
 
 	p.AuditLog = append(p.AuditLog, entry)
+	if p.Logger != nil {
+		p.Logger.LogPermission("AUTO_CONFIRM", capability, entry.Reason, cwd)
+	}
 }
 
 // HasPermission checks if a capability is currently granted

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -38,6 +39,16 @@ type LoggingConfig struct {
 	OutputFormat string `yaml:"output_format"`
 }
 
+// AuditConfig holds audit log settings
+type AuditConfig struct {
+	Enabled            bool   `yaml:"enabled"`
+	Dir                string `yaml:"dir"`
+	RetentionDays      int    `yaml:"retention_days"`
+	MaxSessions        int    `yaml:"max_sessions"`
+	Redact             bool   `yaml:"redact"`
+	ToolArgumentsStyle string `yaml:"tool_arguments_style"`
+}
+
 // BehaviorConfig holds behavioral settings
 type BehaviorConfig struct {
 	RepoRoot string `yaml:"repo_root"`
@@ -49,6 +60,7 @@ type Config struct {
 	LLM      LLMConfig      `yaml:"llm"`
 	Safety   SafetyConfig   `yaml:"safety"`
 	Logging  LoggingConfig  `yaml:"logging"`
+	Audit    AuditConfig    `yaml:"audit"`
 	Behavior BehaviorConfig `yaml:"behavior"`
 
 	// Legacy CLI flags (for backward compatibility)
@@ -88,6 +100,14 @@ func LoadDefaults() Config {
 		Logging: LoggingConfig{
 			Level:        "info",
 			OutputFormat: "json",
+		},
+		Audit: AuditConfig{
+			Enabled:            true,
+			Dir:                ".goshi/audit",
+			RetentionDays:      14,
+			MaxSessions:        50,
+			Redact:             true,
+			ToolArgumentsStyle: "summaries",
 		},
 		Behavior: BehaviorConfig{
 			RepoRoot: "",
@@ -180,6 +200,10 @@ func Load() Config {
 		fmt.Sscanf(ollamaPort, "%d", &cfg.LLM.Local.Port)
 	}
 
+	if auditEnabled := os.Getenv("GOSHI_AUDIT_ENABLED"); auditEnabled != "" {
+		cfg.Audit.Enabled = parseBool(auditEnabled)
+	}
+
 	// Set defaults for legacy fields if not already set
 	if cfg.Model == "" {
 		cfg.Model = cfg.LLM.Model
@@ -190,6 +214,15 @@ func Load() Config {
 
 	cachedConfig = &cfg
 	return cfg
+}
+
+func parseBool(value string) bool {
+	switch strings.ToLower(value) {
+	case "1", "true", "yes", "y", "on":
+		return true
+	default:
+		return false
+	}
 }
 
 // Validate checks configuration for errors
@@ -229,6 +262,25 @@ func (c *Config) Validate() error {
 			c.Logging.Level != "warn" &&
 			c.Logging.Level != "error") {
 		return fmt.Errorf("logging.level must be debug, info, warn, or error, got %s", c.Logging.Level)
+	}
+
+	if c.Audit.ToolArgumentsStyle == "" {
+		return errors.New("audit.tool_arguments_style is required")
+	}
+
+	switch c.Audit.ToolArgumentsStyle {
+	case "full", "long", "short", "summaries":
+		// valid
+	default:
+		return fmt.Errorf("audit.tool_arguments_style must be full, long, short, or summaries, got %s", c.Audit.ToolArgumentsStyle)
+	}
+
+	if c.Audit.RetentionDays < 0 {
+		return fmt.Errorf("audit.retention_days must be >= 0, got %d", c.Audit.RetentionDays)
+	}
+
+	if c.Audit.MaxSessions < 0 {
+		return fmt.Errorf("audit.max_sessions must be >= 0, got %d", c.Audit.MaxSessions)
 	}
 
 	return nil

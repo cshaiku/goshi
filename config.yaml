@@ -55,6 +55,26 @@ logging:
   # Options: "json", "human", "verbose"
   output_format: "json"
 
+# Audit Logging
+audit:
+  # Enable audit logging
+  enabled: true
+
+  # Directory for audit logs (relative to repo root if not absolute)
+  dir: ".goshi/audit"
+
+  # Retention policy (days). 0 disables time-based cleanup.
+  retention_days: 14
+
+  # Maximum sessions to keep. 0 disables count-based cleanup.
+  max_sessions: 50
+
+  # Redact sensitive values in audit logs
+  redact: true
+
+  # Tool argument visibility: full | long | short | summaries
+  tool_arguments_style: "summaries"
+
 # Behavior
 behavior:
   # Repository root to scope all operations

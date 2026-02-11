@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/cshaiku/goshi/internal/app"
+	"github.com/cshaiku/goshi/internal/audit"
+	"github.com/cshaiku/goshi/internal/config"
 	"github.com/cshaiku/goshi/internal/llm"
 )
 
@@ -20,6 +22,7 @@ type ChatSession struct {
 	Messages     []llm.LLMMessage // Structured message history
 	Client       *llm.ClientWithTools
 	ToolRouter   *app.ToolRouter
+	AuditLogger  *audit.Logger
 	Context      context.Context
 }
 
@@ -46,8 +49,26 @@ func NewChatSession(ctx context.Context, systemPrompt string, backend llm.Backen
 
 	// Initialize capabilities and permissions
 	caps := app.NewCapabilities()
+	cfg := config.Load()
+	repoRoot := cfg.Behavior.RepoRoot
+	if repoRoot == "" {
+		repoRoot = cwd
+	}
+
+	auditLogger, err := audit.NewLogger(audit.Config{
+		Enabled:            cfg.Audit.Enabled,
+		Dir:                cfg.Audit.Dir,
+		RetentionDays:      cfg.Audit.RetentionDays,
+		MaxSessions:        cfg.Audit.MaxSessions,
+		Redact:             cfg.Audit.Redact,
+		ToolArgumentsStyle: cfg.Audit.ToolArgumentsStyle,
+	}, repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize audit logger: %w", err)
+	}
 	perms := &Permissions{
 		AuditLog: []PermissionEntry{},
+		Logger:   auditLogger,
 	}
 
 	// Initialize action service and tool router
@@ -57,6 +78,10 @@ func NewChatSession(ctx context.Context, systemPrompt string, backend llm.Backen
 	}
 
 	router := app.NewToolRouter(actionSvc.Dispatcher(), caps)
+	router.SetAuditLogger(auditLogger, cwd)
+	if auditLogger != nil {
+		auditLogger.LogSession("START", fmt.Sprintf("session started (provider=%s model=%s)", cfg.LLM.Provider, cfg.LLM.Model), cwd)
+	}
 
 	// Set up tool validation in the parser
 	client.SetToolValidator(func(toolName string, args map[string]any) error {
@@ -71,6 +96,7 @@ func NewChatSession(ctx context.Context, systemPrompt string, backend llm.Backen
 		Messages:     []llm.LLMMessage{},
 		Client:       client,
 		ToolRouter:   router,
+		AuditLogger:  auditLogger,
 		Context:      ctx,
 	}, nil
 }

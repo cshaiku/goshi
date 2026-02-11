@@ -36,6 +36,14 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.Safety.AutoConfirmPermissions != false {
 		t.Errorf("expected auto_confirm_permissions to be false")
 	}
+
+	if cfg.Audit.Enabled != true {
+		t.Errorf("expected audit.enabled to be true")
+	}
+
+	if cfg.Audit.ToolArgumentsStyle != "summaries" {
+		t.Errorf("expected audit.tool_arguments_style to be summaries, got %s", cfg.Audit.ToolArgumentsStyle)
+	}
 }
 
 // TestValidateSuccess tests validation of a valid config
@@ -160,6 +168,36 @@ func TestValidateInvalidLoggingLevel(t *testing.T) {
 			}
 			if !test.shouldFail && err != nil {
 				t.Errorf("expected validation to pass for level '%s', got error: %v", test.level, err)
+			}
+		})
+	}
+}
+
+func TestValidateInvalidAuditToolArgumentsStyle(t *testing.T) {
+	tests := []struct {
+		name       string
+		style      string
+		shouldFail bool
+	}{
+		{"valid full", "full", false},
+		{"valid long", "long", false},
+		{"valid short", "short", false},
+		{"valid summaries", "summaries", false},
+		{"invalid style", "summary", true},
+		{"empty style", "", true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := LoadDefaults()
+			cfg.Audit.ToolArgumentsStyle = test.style
+			err := cfg.Validate()
+
+			if test.shouldFail && err == nil {
+				t.Errorf("expected validation to fail for audit.tool_arguments_style %s", test.style)
+			}
+			if !test.shouldFail && err != nil {
+				t.Errorf("expected validation to pass for audit.tool_arguments_style %s, got error: %v", test.style, err)
 			}
 		})
 	}
