@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/cshaiku/goshi/internal/diagnose"
@@ -21,9 +22,25 @@ type IntegrityDiagnostic struct {
 
 // ManifestEntry represents a single entry in the integrity manifest
 type ManifestEntry struct {
-	Algorithm string
-	Hash      string
-	FilePath  string
+	Hash     string
+	Size     int64
+	Mode     string
+	ModTime  string
+	FilePath string
+}
+
+// ManifestTarball represents the tarball metadata stored in the manifest
+type ManifestTarball struct {
+	Hash string
+	Size int64
+	Path string
+}
+
+// Manifest represents the parsed integrity manifest
+type Manifest struct {
+	Version string
+	Tarball ManifestTarball
+	Files   []ManifestEntry
 }
 
 // VerificationResult contains the results of file verification
@@ -44,7 +61,7 @@ type FileModification struct {
 // NewIntegrityDiagnostic creates a new integrity diagnostic with default paths
 func NewIntegrityDiagnostic() *IntegrityDiagnostic {
 	repoRoot := findRepoRoot()
-	manifestPath := filepath.Join(repoRoot, "goshi.sum")
+	manifestPath := filepath.Join(repoRoot, ".goshi", "goshi.manifest")
 
 	return &IntegrityDiagnostic{
 		ManifestPath: manifestPath,
@@ -61,14 +78,14 @@ func (d *IntegrityDiagnostic) Run() []diagnose.Issue {
 		issues = append(issues, diagnose.Issue{
 			Code:     "INTEGRITY_NO_MANIFEST",
 			Message:  fmt.Sprintf("No integrity manifest found at %s", d.ManifestPath),
-			Strategy: "Run 'scripts/generate_goshi_sum.sh' to create the manifest",
+			Strategy: "Run 'scripts/generate_goshi_manifest.sh' to create the reference bundle",
 			Severity: diagnose.SeverityWarn,
 		})
 		return issues
 	}
 
 	// Parse manifest
-	entries, err := d.parseManifest()
+	manifest, err := d.parseManifest()
 	if err != nil {
 		issues = append(issues, diagnose.Issue{
 			Code:     "INTEGRITY_PARSE_ERROR",
@@ -78,15 +95,57 @@ func (d *IntegrityDiagnostic) Run() []diagnose.Issue {
 		return issues
 	}
 
+	// Verify tarball
+	if manifest.Tarball.Path == "" {
+		issues = append(issues, diagnose.Issue{
+			Code:     "INTEGRITY_TARBALL_NOT_DECLARED",
+			Message:  "Integrity manifest is missing tarball metadata",
+			Strategy: "Regenerate the reference bundle with 'scripts/generate_goshi_manifest.sh'",
+			Severity: diagnose.SeverityError,
+		})
+		return issues
+	}
+
+	tarballPath := filepath.Join(d.RepoRoot, manifest.Tarball.Path)
+	if _, err := os.Stat(tarballPath); os.IsNotExist(err) {
+		issues = append(issues, diagnose.Issue{
+			Code:     "INTEGRITY_TARBALL_MISSING",
+			Message:  fmt.Sprintf("Source tarball missing at %s", tarballPath),
+			Strategy: "Regenerate the reference bundle with 'scripts/generate_goshi_manifest.sh'",
+			Severity: diagnose.SeverityError,
+		})
+		return issues
+	}
+
+	tarballHash, err := computeSHA256(tarballPath)
+	if err != nil {
+		issues = append(issues, diagnose.Issue{
+			Code:     "INTEGRITY_TARBALL_UNREADABLE",
+			Message:  fmt.Sprintf("Failed to read tarball: %v", err),
+			Severity: diagnose.SeverityError,
+		})
+		return issues
+	}
+
+	if tarballHash != manifest.Tarball.Hash {
+		issues = append(issues, diagnose.Issue{
+			Code:     "INTEGRITY_TARBALL_HASH_MISMATCH",
+			Message:  "Source tarball hash does not match manifest",
+			Strategy: "Regenerate the reference bundle with 'scripts/generate_goshi_manifest.sh'",
+			Severity: diagnose.SeverityError,
+		})
+		return issues
+	}
+
 	// Verify files
-	result := d.verifyFiles(entries)
+	result := d.verifyFiles(manifest.Files)
 
 	// Report missing files
 	if len(result.MissingFiles) > 0 {
 		issues = append(issues, diagnose.Issue{
 			Code:     "INTEGRITY_MISSING_FILES",
 			Message:  fmt.Sprintf("%d tracked files are missing:\n%s", len(result.MissingFiles), strings.Join(result.MissingFiles, "\n")),
-			Strategy: "Files may have been deleted or moved. Regenerate goshi.sum if this is intentional.",
+			Strategy: "Files may have been deleted or moved. Regenerate the reference bundle if this is intentional.",
 			Severity: diagnose.SeverityError,
 		})
 	}
@@ -101,7 +160,7 @@ func (d *IntegrityDiagnostic) Run() []diagnose.Issue {
 		issues = append(issues, diagnose.Issue{
 			Code:     "INTEGRITY_HASH_MISMATCH",
 			Message:  fmt.Sprintf("%d files have been modified:\n%s", len(result.ModifiedFiles), strings.Join(modifiedList, "\n")),
-			Strategy: "Review changes and regenerate goshi.sum after committing valid changes.",
+			Strategy: "Review changes and regenerate the reference bundle after committing valid changes.",
 			Severity: diagnose.SeverityError,
 		})
 	}
@@ -119,14 +178,14 @@ func (d *IntegrityDiagnostic) Run() []diagnose.Issue {
 }
 
 // parseManifest reads and parses the integrity manifest file
-func (d *IntegrityDiagnostic) parseManifest() ([]ManifestEntry, error) {
+func (d *IntegrityDiagnostic) parseManifest() (Manifest, error) {
 	file, err := os.Open(d.ManifestPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open manifest: %w", err)
+		return Manifest{}, fmt.Errorf("failed to open manifest: %w", err)
 	}
 	defer file.Close()
 
-	var entries []ManifestEntry
+	manifest := Manifest{}
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
@@ -137,24 +196,52 @@ func (d *IntegrityDiagnostic) parseManifest() ([]ManifestEntry, error) {
 			continue
 		}
 
-		// Parse line: ALGORITHM HASH FILEPATH
-		parts := strings.SplitN(line, " ", 3)
-		if len(parts) != 3 {
-			continue // Skip malformed lines
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
 		}
 
-		entries = append(entries, ManifestEntry{
-			Algorithm: parts[0],
-			Hash:      parts[1],
-			FilePath:  parts[2],
-		})
+		switch fields[0] {
+		case "VERSION":
+			if len(fields) >= 2 {
+				manifest.Version = fields[1]
+			}
+		case "TARBALL":
+			if len(fields) >= 4 {
+				size, err := strconv.ParseInt(fields[2], 10, 64)
+				if err != nil {
+					continue
+				}
+				manifest.Tarball = ManifestTarball{
+					Hash: fields[1],
+					Size: size,
+					Path: strings.Join(fields[3:], " "),
+				}
+			}
+		case "FILE":
+			if len(fields) >= 6 {
+				size, err := strconv.ParseInt(fields[2], 10, 64)
+				if err != nil {
+					continue
+				}
+				manifest.Files = append(manifest.Files, ManifestEntry{
+					Hash:     fields[1],
+					Size:     size,
+					Mode:     fields[3],
+					ModTime:  fields[4],
+					FilePath: strings.Join(fields[5:], " "),
+				})
+			}
+		default:
+			continue
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading manifest: %w", err)
+		return Manifest{}, fmt.Errorf("error reading manifest: %w", err)
 	}
 
-	return entries, nil
+	return manifest, nil
 }
 
 // verifyFiles checks each file in the entries against its expected hash

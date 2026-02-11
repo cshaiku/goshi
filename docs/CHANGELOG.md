@@ -4,6 +4,9 @@ All notable changes to goshi are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Changed
+- **Source Integrity Reference Bundle** — Replace goshi.sum with .goshi/goshi.manifest and .goshi/goshi.source.tar.gz
+
 ### Planned
 - Enhanced LLM backend selection and fallback logic
 - Extended tool registry with custom tool registration
@@ -14,7 +17,7 @@ All notable changes to goshi are documented in this file. The format is based on
 ## [1.3.0] - 2026-02-10
 
 ### Added
-- **Source Integrity Diagnostics** — Offensive security testing framework for validating goshi.sum integrity checking
+- **Source Integrity Diagnostics** — Offensive security testing framework for validating goshi.manifest integrity checking
   - `IntegrityDiagnostic` package with SHA256 file verification against manifest
   - Offensive test suite with build tag isolation (`//go:build offensive`)
   - Safe file tampering utilities with automatic backup/restore pattern
@@ -38,7 +41,7 @@ All notable changes to goshi are documented in this file. The format is based on
 - **README Wording** — Updated to reflect current-state language (no phase references)
 
 ### Fixed
-- **CI Offensive Tests** — Restore goshi.sum after offensive tests to keep repo clean
+- **CI Offensive Tests** — Restore goshi.manifest after offensive tests to keep repo clean
 
 ---
 

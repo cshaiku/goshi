@@ -117,21 +117,21 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Generate goshi.sum manifest
+      - name: Generate goshi.manifest
         run: |
-          chmod +x scripts/generate_goshi_sum.sh
-          bash scripts/generate_goshi_sum.sh
+          chmod +x scripts/generate_goshi_manifest.sh
+          bash scripts/generate_goshi_manifest.sh
 
-      - name: Snapshot goshi.sum before tests
-        run: cp goshi.sum goshi.sum.bak
+      - name: Snapshot goshi.manifest before tests
+        run: cp .goshi/goshi.manifest .goshi/goshi.manifest.bak
 
       - name: Run offensive security tests
         run: go test -tags=offensive -v ./internal/diagnostics/integrity/
 
-      - name: Restore goshi.sum after tests
+      - name: Restore goshi.manifest after tests
         run: |
-          mv goshi.sum.bak goshi.sum
-          git status --porcelain goshi.sum
+          mv .goshi/goshi.manifest.bak .goshi/goshi.manifest
+          git status --porcelain .goshi/goshi.manifest
 
       - name: Verify repository is clean after tests
         run: |
@@ -157,25 +157,25 @@ jobs:
 
       - name: Generate source integrity manifest
         run: |
-          chmod +x scripts/generate_goshi_sum.sh
-          bash scripts/generate_goshi_sum.sh
+          chmod +x scripts/generate_goshi_manifest.sh
+          bash scripts/generate_goshi_manifest.sh
 
-      - name: Check if goshi.sum changed
+      - name: Check if goshi.manifest changed
         id: check_changes
         run: |
-          if [ -n "$(git status --porcelain goshi.sum)" ]; then
+          if [ -n "$(git status --porcelain .goshi/goshi.manifest .goshi/goshi.source.tar.gz)" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit updated goshi.sum
+      - name: Commit updated goshi.manifest
         if: steps.check_changes.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add goshi.sum
-          git commit -m "chore: Update source integrity manifest [skip ci]"
+          git add .goshi/goshi.manifest .goshi/goshi.source.tar.gz
+          git commit -m "chore: Update source integrity reference bundle [skip ci]"
           git push origin main
 
   build:

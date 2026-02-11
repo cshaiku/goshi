@@ -3,6 +3,7 @@
 package integrity
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/cshaiku/goshi/internal/diagnose"
@@ -101,6 +102,75 @@ func TestIntegrityDetectsMissingFile(t *testing.T) {
 	if !foundMissing {
 		t.Errorf("Failed to detect missing file - SECURITY ISSUE!")
 		t.Logf("Issues returned: %+v", issues)
+	}
+}
+
+// TestIntegrityRestoresMissingFileFromTarball verifies missing file recovery from the tarball.
+func TestIntegrityRestoresMissingFileFromTarball(t *testing.T) {
+	helper, err := NewTestHelper()
+	if err != nil {
+		t.Skip("Not in git repository, skipping offensive test")
+	}
+
+	// Select a random .go file
+	targetFile, err := helper.RandomGoFile()
+	if err != nil {
+		t.Fatalf("Failed to select random file: %v", err)
+	}
+
+	// Delete the file
+	restore, err := helper.DeleteFile(targetFile)
+	if err != nil {
+		t.Fatalf("Failed to delete file: %v", err)
+	}
+	defer func() {
+		if err := restore(); err != nil {
+			t.Errorf("Failed to restore file: %v", err)
+		}
+	}()
+
+	diag := NewIntegrityDiagnostic()
+	manifest, result, err := diag.PlanRepair()
+	if err != nil {
+		t.Skipf("Integrity reference bundle unavailable: %v", err)
+	}
+
+	missing := false
+	for _, path := range result.MissingFiles {
+		if path == targetFile {
+			missing = true
+			break
+		}
+	}
+	if !missing {
+		t.Fatalf("Expected missing file %s to be detected", targetFile)
+	}
+
+	restored, err := diag.RestoreFromTarball(manifest, []string{targetFile})
+	if err != nil {
+		t.Fatalf("Failed to restore from tarball: %v", err)
+	}
+	if len(restored) != 1 || restored[0] != targetFile {
+		t.Fatalf("Unexpected restore result: %v", restored)
+	}
+
+	var expectedHash string
+	for _, entry := range manifest.Files {
+		if entry.FilePath == targetFile {
+			expectedHash = entry.Hash
+			break
+		}
+	}
+	if expectedHash == "" {
+		t.Fatalf("Missing manifest entry for %s", targetFile)
+	}
+
+	actualHash, err := computeSHA256(filepath.Join(diag.RepoRoot, targetFile))
+	if err != nil {
+		t.Fatalf("Failed to hash restored file: %v", err)
+	}
+	if actualHash != expectedHash {
+		t.Fatalf("Restored file hash mismatch: expected %s got %s", expectedHash, actualHash)
 	}
 }
 

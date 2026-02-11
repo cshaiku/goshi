@@ -33,7 +33,7 @@ CHECKS PERFORMED:
   - Basic configuration validation
   - Environmental dependencies
   - Go module integrity
-  - Source file integrity (via goshi.sum)
+	- Source file integrity (via .goshi/goshi.manifest)
 
 SEVERITY LEVELS:
   OK      - No issues detected

@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/spf13/cobra"
 
 	"github.com/cshaiku/goshi/internal/config"
 	"github.com/cshaiku/goshi/internal/detect"
 	"github.com/cshaiku/goshi/internal/diagnose"
+	"github.com/cshaiku/goshi/internal/diagnostics/integrity"
 	"github.com/cshaiku/goshi/internal/exec"
 	"github.com/cshaiku/goshi/internal/repair"
 	"github.com/cshaiku/goshi/internal/verify"
@@ -42,9 +44,10 @@ DESCRIPTION:
 This command performs a multi-stage diagnostic and repair workflow:
   1. Detect      - Identify missing or misconfigured binaries (git, curl, jq)
   2. Diagnose    - Analyze detected problems and assess severity
-  3. Plan        - Generate repair actions based on diagnosis
-  4. Execute     - Run repair commands (requires confirmation)
-  5. Verify      - Confirm repairs were successful
+	3. Integrity   - Validate source reference bundle and plan restore actions
+	4. Plan        - Generate repair actions based on diagnosis
+	5. Execute     - Run repair commands (requires confirmation)
+	6. Verify      - Confirm repairs were successful
 
 WORKFLOW SAFETY:
 By default, heal runs in DRY-RUN mode, which shows what would be done without
@@ -158,7 +161,29 @@ SEE ALSO:
 					return err
 				}
 
-				if len(diag.Issues) == 0 {
+				// --- integrity diagnostics ---
+				integrityDiag := integrity.NewIntegrityDiagnostic()
+				manifest, integrityResult, integrityErr := integrityDiag.PlanRepair()
+				integrityTargets := make([]string, 0)
+				if integrityErr == nil {
+					seen := make(map[string]struct{})
+					for _, path := range integrityResult.MissingFiles {
+						seen[path] = struct{}{}
+					}
+					for _, mod := range integrityResult.ModifiedFiles {
+						seen[mod.Path] = struct{}{}
+					}
+					for path := range seen {
+						integrityTargets = append(integrityTargets, path)
+					}
+					sort.Strings(integrityTargets)
+				}
+
+				if len(diag.Issues) == 0 && len(integrityTargets) == 0 {
+					if integrityErr != nil {
+						fmt.Printf("✔ nothing to repair (integrity check unavailable: %v)\n", integrityErr)
+						return nil
+					}
 					fmt.Println("✔ nothing to repair")
 					return nil
 				}
@@ -170,9 +195,22 @@ SEE ALSO:
 					return err
 				}
 
-				if len(plan.Actions) == 0 {
+				if len(plan.Actions) == 0 && len(integrityTargets) == 0 {
 					fmt.Println("No repair actions available")
 					return nil
+				}
+
+				if integrityErr != nil {
+					fmt.Printf("Integrity repair unavailable: %v\n", integrityErr)
+				} else if len(integrityTargets) > 0 {
+					if cfg.DryRun {
+						fmt.Println("Integrity restore plan (dry-run):")
+					} else {
+						fmt.Println("Integrity restore plan:")
+					}
+					for _, path := range integrityTargets {
+						fmt.Printf(" - restore %s\n", path)
+					}
 				}
 
 				// --- confirmation gate ---
@@ -180,6 +218,9 @@ SEE ALSO:
 					fmt.Println("The following actions will be executed:")
 					for _, a := range plan.Actions {
 						fmt.Printf(" - %v\n", a.Command)
+					}
+					for _, path := range integrityTargets {
+						fmt.Printf(" - restore %s (from source tarball)\n", path)
 					}
 
 					if !cfg.Yes {
@@ -198,6 +239,15 @@ SEE ALSO:
 				if err := ex.Execute(plan); err != nil {
 					// execution failure = fatal
 					os.Exit(3)
+				}
+
+				if !cfg.DryRun && integrityErr == nil && len(integrityTargets) > 0 {
+					restored, err := integrityDiag.RestoreFromTarball(manifest, integrityTargets)
+					if err != nil {
+						fmt.Printf("✖ integrity restore failed: %v\n", err)
+						os.Exit(3)
+					}
+					fmt.Printf("✔ restored %d source files from tarball\n", len(restored))
 				}
 
 				// --- verify ---
