@@ -27,44 +27,53 @@ echo "  ✅ All tests passed"
 echo ""
 
 # 3. Generate source integrity manifest
-echo "[3/3] Generating source integrity manifest (goshi.sum)..."
+echo "[3/3] Generating source integrity manifest (.goshi/goshi.manifest)..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Check if goshi.sum is already staged
-if git diff --cached --name-only 2>/dev/null | grep -q "^goshi.sum$"; then
-    echo "  ℹ️  goshi.sum is already staged, skipping generation"
+# Check if manifest artifacts are already staged
+MANIFEST_STAGED=false
+TARBALL_STAGED=false
+if git diff --cached --name-only 2>/dev/null | grep -q "^\.goshi/goshi.manifest$"; then
+    MANIFEST_STAGED=true
+fi
+if git diff --cached --name-only 2>/dev/null | grep -q "^\.goshi/goshi.source.tar.gz$"; then
+    TARBALL_STAGED=true
+fi
+
+if [ "$MANIFEST_STAGED" = true ] && [ "$TARBALL_STAGED" = true ]; then
+    echo "  ℹ️  .goshi reference bundle is already staged, skipping generation"
     echo "  ✅ Source integrity manifest will be included in push"
-elif [ ! -f "$REPO_ROOT/scripts/generate_goshi_sum.sh" ]; then
+elif [ ! -f "$REPO_ROOT/scripts/generate_goshi_manifest.sh" ]; then
     echo "  ⚠️  Generator script not found, skipping"
 else
     # Check if any .go files changed since last commit
-    # This prevents regeneration loop when only goshi.sum metadata (git hash) changes
+    # This prevents regeneration loop when only manifest metadata (git hash) changes
     GO_FILES_CHANGED=$(git diff --name-only HEAD 2>/dev/null | grep '\.go$' || true)
     
-    if [ -f "$REPO_ROOT/goshi.sum" ] && [ -z "$GO_FILES_CHANGED" ]; then
+    if [ -f "$REPO_ROOT/.goshi/goshi.manifest" ] && [ -f "$REPO_ROOT/.goshi/goshi.source.tar.gz" ] && [ -z "$GO_FILES_CHANGED" ]; then
         echo "  ℹ️  No Go source files changed, skipping generation"
         echo "  ✅ Source integrity manifest is up to date"
     else
         if [ -n "$GO_FILES_CHANGED" ]; then
             echo "  📝 Go source files changed, regenerating..."
         fi
-        bash "$REPO_ROOT/scripts/generate_goshi_sum.sh"
+        bash "$REPO_ROOT/scripts/generate_goshi_manifest.sh"
         
-        # Check if goshi.sum changed
-        if ! git diff --quiet goshi.sum 2>/dev/null; then
+        # Check if manifest artifacts changed
+        if ! git diff --quiet -- .goshi/goshi.manifest .goshi/goshi.source.tar.gz 2>/dev/null; then
             echo ""
-            echo "  ⚠️  goshi.sum was updated"
+            echo "  ⚠️  .goshi/goshi.manifest was updated"
             echo ""
-            echo "  The source integrity manifest has changed."
-            echo "  You should commit the updated goshi.sum file:"
+            echo "  The source integrity reference bundle has changed."
+            echo "  You should commit the updated artifacts:"
             echo ""
-            echo "    git add goshi.sum"
-            echo "    git commit -m 'chore: Update source integrity manifest'"
+            echo "    git add .goshi/goshi.manifest .goshi/goshi.source.tar.gz"
+            echo "    git commit -m 'chore: Update source integrity reference bundle'"
             echo "    git push"
             echo ""
             echo "  Or if this is intentional, you can:"
-            echo "    git add goshi.sum"
+            echo "    git add .goshi/goshi.manifest .goshi/goshi.source.tar.gz"
             echo "    git commit --amend --no-edit"
             echo "    git push"
             echo ""

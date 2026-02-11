@@ -50,7 +50,7 @@ Example (human view):
 [14:32:11] GRANT  FS_READ   (user-approved) in /Users/cs/goshi
 [14:32:20] TOOL   fs.list   ok  path="."  (5 items)
 [14:33:04] DENY   FS_WRITE  (user-denied) in /Users/cs/goshi
-[14:34:19] INTEGRITY ERROR  goshi.sum mismatch
+[14:34:19] INTEGRITY ERROR  goshi.manifest mismatch
 ```
 
 ### 3) Structured Export

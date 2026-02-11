@@ -24,15 +24,17 @@ func TestNewIntegrityDiagnostic(t *testing.T) {
 
 func TestParseManifest(t *testing.T) {
 	tmpDir := t.TempDir()
-	manifestPath := filepath.Join(tmpDir, "test.sum")
+	manifestPath := filepath.Join(tmpDir, "test.manifest")
 
 	content := `# Test manifest
 # Generated: 2026-02-10
 
-SHA256 abc123def456 internal/test/file1.go
-SHA256 789ghi012jkl internal/test/file2.go
+VERSION 1
+TARBALL deadbeef 123 .goshi/goshi.source.tar.gz
+FILE abc123def456 12 0644 2026-02-10T00:00:00Z internal/test/file1.go
+FILE 789ghi012jkl 24 0644 2026-02-10T00:00:00Z internal/test/file2.go
 # Comment line
-SHA256 mno345pqr678 main.go
+FILE mno345pqr678 8 0644 2026-02-10T00:00:00Z main.go
 `
 
 	if err := os.WriteFile(manifestPath, []byte(content), 0644); err != nil {
@@ -44,23 +46,23 @@ SHA256 mno345pqr678 main.go
 		RepoRoot:     tmpDir,
 	}
 
-	entries, err := diag.parseManifest()
+	manifest, err := diag.parseManifest()
 	if err != nil {
 		t.Fatalf("parseManifest failed: %v", err)
 	}
 
-	if len(entries) != 3 {
-		t.Errorf("Expected 3 entries, got %d", len(entries))
+	if len(manifest.Files) != 3 {
+		t.Errorf("Expected 3 entries, got %d", len(manifest.Files))
 	}
 
-	if entries[0].Algorithm != "SHA256" {
-		t.Errorf("Expected algorithm SHA256, got %s", entries[0].Algorithm)
+	if manifest.Files[0].Hash != "abc123def456" {
+		t.Errorf("Expected hash abc123def456, got %s", manifest.Files[0].Hash)
 	}
-	if entries[0].Hash != "abc123def456" {
-		t.Errorf("Expected hash abc123def456, got %s", entries[0].Hash)
+	if manifest.Files[0].FilePath != "internal/test/file1.go" {
+		t.Errorf("Expected path internal/test/file1.go, got %s", manifest.Files[0].FilePath)
 	}
-	if entries[0].FilePath != "internal/test/file1.go" {
-		t.Errorf("Expected path internal/test/file1.go, got %s", entries[0].FilePath)
+	if manifest.Tarball.Path != ".goshi/goshi.source.tar.gz" {
+		t.Errorf("Expected tarball path .goshi/goshi.source.tar.gz, got %s", manifest.Tarball.Path)
 	}
 }
 
@@ -97,9 +99,8 @@ func TestVerifyFiles_AllValid(t *testing.T) {
 
 	entries := []ManifestEntry{
 		{
-			Algorithm: "SHA256",
-			Hash:      hash,
-			FilePath:  "test.go",
+			Hash:     hash,
+			FilePath: "test.go",
 		},
 	}
 
@@ -128,9 +129,8 @@ func TestVerifyFiles_MissingFile(t *testing.T) {
 
 	entries := []ManifestEntry{
 		{
-			Algorithm: "SHA256",
-			Hash:      "abc123",
-			FilePath:  "nonexistent.go",
+			Hash:     "abc123",
+			FilePath: "nonexistent.go",
 		},
 	}
 
@@ -159,9 +159,8 @@ func TestVerifyFiles_ModifiedFile(t *testing.T) {
 
 	entries := []ManifestEntry{
 		{
-			Algorithm: "SHA256",
-			Hash:      "wronghash123456",
-			FilePath:  "test.go",
+			Hash:     "wronghash123456",
+			FilePath: "test.go",
 		},
 	}
 
@@ -186,7 +185,7 @@ func TestRun_NoManifest(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	diag := &IntegrityDiagnostic{
-		ManifestPath: filepath.Join(tmpDir, "nonexistent.sum"),
+		ManifestPath: filepath.Join(tmpDir, "nonexistent.manifest"),
 		RepoRoot:     tmpDir,
 	}
 

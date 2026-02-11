@@ -191,7 +191,7 @@ Detected issues:
    internal/cli/doctor.go
      Expected: 2d1793f963d57b22...
      Actual:   f7647020e14bbff3...
-   (suggested: Review changes and regenerate goshi.sum after committing valid changes.)
+  (suggested: Review changes and regenerate the reference bundle after committing valid changes.)
 ```
 
 JSON output:
@@ -202,7 +202,7 @@ $ goshi doctor --format=json
     {
       "Code": "INTEGRITY_HASH_MISMATCH",
       "Message": "1 files have been modified:\n  internal/cli/doctor.go\n    Expected: 2d1793f963d57b22...\n    Actual:   f7647020e14bbff3...",
-      "Strategy": "Review changes and regenerate goshi.sum after committing valid changes.",
+      "Strategy": "Review changes and regenerate the reference bundle after committing valid changes.",
       "Severity": "error"
     }
   ]
@@ -229,7 +229,7 @@ $ goshi doctor --format=json
 
 1. **Run before major changes**: Validate integrity system still works
 2. **Add tests for new attacks**: If you think of a new attack vector, test it
-3. **Keep manifest updated**: Regenerate `goshi.sum` after file changes
+3. **Keep manifest updated**: Regenerate `.goshi/goshi.manifest` after file changes
 4. **Review security issues**: Don't ignore integrity check failures
 
 ## Troubleshooting
@@ -237,10 +237,10 @@ $ goshi doctor --format=json
 ### "File not found" errors
 
 **Cause**: Test selected a file that was recently deleted or moved.
-**Solution**: Regenerate `goshi.sum` to update the manifest.
+**Solution**: Regenerate `.goshi/goshi.manifest` to update the manifest.
 
 ```bash
-bash scripts/generate_goshi_sum.sh
+bash scripts/generate_goshi_manifest.sh
 ```
 
 ### Tests hang or timeout

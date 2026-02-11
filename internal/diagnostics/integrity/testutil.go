@@ -24,7 +24,7 @@ func NewTestHelper() (*TestHelper, error) {
 
 	return &TestHelper{
 		RepoRoot:     repoRoot,
-		ManifestPath: filepath.Join(repoRoot, "goshi.sum"),
+		ManifestPath: filepath.Join(repoRoot, ".goshi", "goshi.manifest"),
 	}, nil
 }
 
@@ -35,14 +35,14 @@ func (h *TestHelper) RandomGoFile() (string, error) {
 		RepoRoot:     h.RepoRoot,
 	}
 
-	entries, err := diag.parseManifest()
+	manifest, err := diag.parseManifest()
 	if err != nil {
 		return "", fmt.Errorf("failed to parse manifest: %w", err)
 	}
 
 	// Filter for .go files only
 	var goFiles []string
-	for _, entry := range entries {
+	for _, entry := range manifest.Files {
 		if strings.HasSuffix(entry.FilePath, ".go") {
 			goFiles = append(goFiles, entry.FilePath)
 		}
