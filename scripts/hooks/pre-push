@@ -29,9 +29,10 @@ echo ""
 # 3. Generate source integrity manifest
 echo "[3/3] Generating source integrity manifest (goshi.sum)..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-if [ -f "$SCRIPT_DIR/../generate_goshi_sum.sh" ]; then
-    bash "$SCRIPT_DIR/../generate_goshi_sum.sh"
+if [ -f "$REPO_ROOT/scripts/generate_goshi_sum.sh" ]; then
+    bash "$REPO_ROOT/scripts/generate_goshi_sum.sh"
     
     # Check if goshi.sum changed
     if ! git diff --quiet goshi.sum 2>/dev/null; then
