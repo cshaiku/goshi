@@ -30,6 +30,9 @@ Run `goshi` or `goshi chat` to launch an interactive Text User Interface:
 - **Status Bar (2 lines)** — Telemetry: latency, tokens, cost, memory, guardrails, LLM model
 - **Input Area** — Message composer with mode and toggles display
 
+
+![Alt text](assets/screen-tui-v2.png)
+
 **Features:**
 - Real-time LLM streaming with visual feedback
 - Scrollable message history (viewport with Up/Down arrows)
