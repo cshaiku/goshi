@@ -4,13 +4,20 @@ All notable changes to goshi are documented in this file. The format is based on
 
 ## [Unreleased]
 
-### Changed
-- **Source Integrity Reference Bundle** — Replace goshi.sum with .goshi/goshi.manifest and .goshi/goshi.source.tar.gz
-
 ### Planned
 - Enhanced LLM backend selection and fallback logic
 - Extended tool registry with custom tool registration
 - Multi-session conversation management
+
+---
+
+## [1.4.0] - 2026-02-11
+
+### Changed
+- **Source Integrity Reference Bundle** — Replace goshi.sum with .goshi/goshi.manifest and .goshi/goshi.source.tar.gz
+
+### Added
+- **Heal Integrity Restore** — `goshi heal` can restore missing or modified Go files from the source tarball
 
 ---
 
