@@ -1,6 +1,6 @@
 # goshi.sum - Source Code Integrity Manifest
-# Generated: 2026-02-11T04:46:45Z
-# Git Commit: 58ba810c3856433defb34d765fabba36e2e73d89
+# Generated: 2026-02-11T05:06:04Z
+# Git Commit: 60ea7c5d6ed217a9b150ea592ed97623bf92fed4
 # Git Branch: main
 # Git Tag: none
 # Go Version: go1.24.12
@@ -30,7 +30,7 @@ SHA256 d16144a440236cfccf3604f2e62e596331a9e8ebcca2592c7a298373df9c4f8e internal
 SHA256 1e61ea354579f83dc80b4b92aeb57802c551ddc531fa6e8d84ddebeffc57bd02 internal/cli/config_cmd.go
 SHA256 865b39b71c5eb4fad7d2972ceb55fcaf9aee870c4d289618acfb4b89597f5893 internal/cli/diagnostics.go
 SHA256 5f94b19febe0bea83970c7d65b4f93e8037316f73468cdccd0b35887ae748cc3 internal/cli/display.go
-SHA256 2d1793f963d57b22d33985d89382979c7288fed513197a63ad800ae439b42b1f internal/cli/doctor.go
+SHA256 f7647020e14bbff3754c35dab11eb63268b1521f76543e55356f5c801e677742 internal/cli/doctor.go
 SHA256 7b287bddc548a97d3e33cbbb0ed2bca99880e4443fbe75af7b2420eec8411070 internal/cli/fs.go
 SHA256 10e3a5175d17f0f7a12f421327412348d5934f5001b776cbea9807ce748489ce internal/cli/fs_apply.go
 SHA256 f900fbbfd2fc64fab7f31d308c84ae499ec5e03abf71bdc5d5e3c5b23c22f5c1 internal/cli/fs_probe.go
@@ -54,6 +54,10 @@ SHA256 0b4c76dd6391feb32742198fac11a2995e8d1031391503559f05fe8f1ca62806 internal
 SHA256 08cd45cd48ea679d3e029bd8c03cebd54ae4dc50f7f9b66a21f38fd4f9b9a01a internal/diagnose/diagnoser.go
 SHA256 d906e80ce19124dc60bee881721104d331830321288d71b03900b0fea0461e9f internal/diagnose/result.go
 SHA256 4c6710183a616c689820425b72d4805f5a60c944963200a761301c5e2aae3036 internal/diagnose/severity.go
+SHA256 acd8505a9c12278c652ad1b071c0827a46bda3264bf18046a3fafda6fb4ef60f internal/diagnostics/integrity/integrity_offensive_test.go
+SHA256 f133bc58270363af9e5401394a01babb561193f1366e8547a53952d73bf7e6ee internal/diagnostics/integrity/source_integrity.go
+SHA256 99ba4ea8bc105a26fe4aef9a40a0204097177f0eeb35f6e9819e932aac1d7610 internal/diagnostics/integrity/source_integrity_test.go
+SHA256 87256e86a57c56235bc8def0fdedbefc5978cf59a016b797c3ba0a38e01c65fa internal/diagnostics/integrity/testutil.go
 SHA256 f22e94fe57ee707141a676741736ae9b1c317ee3d78168a98c39e774e35cf43f internal/diagnostics/modules/go_modules.go
 SHA256 477aa2f8ced9eda88261b365243465e79429d4d5523c05fb23ce365abff7732a internal/diagnostics/safety/binary_name.go
 SHA256 7eab1c86200d3d0167d569d74dd48dd50fed648c7c2976c99c2db2a01e3bc37f internal/diagnostics/safety/cwd_scope.go
@@ -136,8 +140,8 @@ SHA256 30eaf8b2fe4249f6d8831048eea30892f2f25c3ca3232bc30e951a914a504c00 go.mod
 SHA256 ca34e9ed0933aadbe75fb21fee80b2a0c455620feff010adff4fefe9de0a8e91 go.sum
 #
 # Summary:
-# - Source files: 118
-# - Total hashes: 120
-# - Generated: 2026-02-11T04:46:45Z
-# - Commit: 58ba810c3856433defb34d765fabba36e2e73d89
+# - Source files: 122
+# - Total hashes: 124
+# - Generated: 2026-02-11T05:06:04Z
+# - Commit: 60ea7c5d6ed217a9b150ea592ed97623bf92fed4
 #
