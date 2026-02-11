@@ -14,6 +14,8 @@ const (
 	EventTypeSafety     EventType = "safety"
 	EventTypeDiagnostic EventType = "diagnostic"
 	EventTypeSession    EventType = "session"
+	EventTypeMessage    EventType = "message"
+	EventTypeResponse   EventType = "response"
 )
 
 const (

@@ -166,6 +166,33 @@ func (l *Logger) LogSession(action string, message string, cwd string) {
 	})
 }
 
+func (l *Logger) LogMessage(content string, cwd string) {
+	l.LogEvent(Event{
+		Type:    EventTypeMessage,
+		Action:  "user_message",
+		Status:  StatusOK,
+		Message: content,
+		Cwd:     cwd,
+	})
+}
+
+func (l *Logger) LogResponse(content string, isToolCall bool, cwd string) {
+	action := "text_response"
+	if isToolCall {
+		action = "tool_call"
+	}
+	l.LogEvent(Event{
+		Type:    EventTypeResponse,
+		Action:  action,
+		Status:  StatusOK,
+		Message: content,
+		Cwd:     cwd,
+		Details: map[string]any{
+			"is_tool_call": isToolCall,
+		},
+	})
+}
+
 func resolveDir(dir string, repoRoot string) (string, error) {
 	if dir == "" {
 		dir = ".goshi/audit"

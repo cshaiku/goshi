@@ -107,6 +107,11 @@ func (s *ChatSession) AddUserMessage(content string) {
 		Content: content,
 	}
 	s.Messages = append(s.Messages, &msg)
+	
+	// Log user message
+	if s.AuditLogger != nil {
+		s.AuditLogger.LogMessage(content, s.WorkingDir)
+	}
 }
 
 // AddAssistantTextMessage adds an assistant text message to the conversation history
@@ -115,6 +120,11 @@ func (s *ChatSession) AddAssistantTextMessage(content string) {
 		Content: content,
 	}
 	s.Messages = append(s.Messages, &msg)
+	
+	// Log LLM text response
+	if s.AuditLogger != nil {
+		s.AuditLogger.LogResponse(content, false, s.WorkingDir)
+	}
 }
 
 // AddAssistantActionMessage adds an assistant action message to the conversation history
@@ -125,6 +135,11 @@ func (s *ChatSession) AddAssistantActionMessage(toolName string, toolArgs map[st
 		ToolID:   "auto",
 	}
 	s.Messages = append(s.Messages, &msg)
+	
+	// Log LLM tool call response
+	if s.AuditLogger != nil {
+		s.AuditLogger.LogResponse(toolName, true, s.WorkingDir)
+	}
 }
 
 // AddToolResultMessage adds a tool result message to the conversation history
