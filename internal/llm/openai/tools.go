@@ -40,7 +40,7 @@ func convertSchemaToParameters(schema app.JSONSchema) map[string]any {
 		"properties": make(map[string]any),
 	}
 
-	if schema.Required != nil && len(schema.Required) > 0 {
+	if len(schema.Required) > 0 {
 		params["required"] = schema.Required
 	}
 
