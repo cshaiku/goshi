@@ -32,7 +32,7 @@ goshi/
 - Located in `internal/config/`
 - Supports multiple configuration sources:
   1. Environment variables (GOSHI_*)
-  2. Repository-scoped config (.goshi.yaml)
+  2. Repository-scoped config (goshi.yaml)
   3. User home config (~/.goshi/config.yaml)
   4. System-wide config (/etc/goshi/config.yaml)
 - Key configuration types:
@@ -76,7 +76,7 @@ Default configuration can be overridden through:
   - GOSHI_OLLAMA_URL
   - GOSHI_OLLAMA_PORT
 - Configuration files:
-  - .goshi.yaml
+  - goshi.yaml
   - ~/.goshi/config.yaml
 
 ## Common Tasks

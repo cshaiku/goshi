@@ -130,14 +130,12 @@ func configPaths() []string {
 
 	// 2. Repository-scoped config
 	if wd, err := os.Getwd(); err == nil {
-		paths = append(paths, filepath.Join(wd, ".goshi.yaml"))
 		paths = append(paths, filepath.Join(wd, "goshi.yaml"))
 	}
 
 	// 3. User home config
 	if home, err := os.UserHomeDir(); err == nil {
 		paths = append(paths, filepath.Join(home, ".goshi", "config.yaml"))
-		paths = append(paths, filepath.Join(home, ".goshi.yaml"))
 	}
 
 	// 4. System-wide config

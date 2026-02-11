@@ -359,7 +359,7 @@ ollama pull qwen3:8b-q8_0
 ./goshi chat
 ```
 
-**Configuration** (`goshi.yaml` or `.goshi.yaml`):
+**Configuration** (`goshi.yaml`):
 ```yaml
 llm:
   provider: ollama  # or "auto" to auto-detect

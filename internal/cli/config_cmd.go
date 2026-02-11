@@ -19,9 +19,9 @@ func newConfigCommand() *cobra.Command {
 
 Config file search order:
   1. $GOSHI_CONFIG environment variable
-  2. .goshi.yaml (current directory)
-  3. ~/.goshi/config.yaml (home directory)
-  4. /etc/goshi/config.yaml (system-wide)
+	2. goshi.yaml (current directory)
+	3. ~/.goshi/config.yaml (home directory)
+	4. /etc/goshi/config.yaml (system-wide)
   5. Built-in defaults
 
 QUICK START:
@@ -199,7 +199,7 @@ func newConfigInitCommand() *cobra.Command {
 
 Creates a well-commented configuration file with all available options
 and sensible defaults. Can write to:
-	- Current directory (.goshi.yaml)
+	- Current directory (goshi.yaml)
 	- Home directory (~/.goshi/config.yaml)
 	- Custom path
 
@@ -208,7 +208,7 @@ Use --overwrite to replace existing files.
 
 EXAMPLES:
 	$ goshi config init
-	✓ Created .goshi.yaml in current directory
+	✓ Created goshi.yaml in current directory
 
 	$ goshi config init --output ~/.goshi/config.yaml
 	✓ Created ~/.goshi/config.yaml
@@ -227,7 +227,7 @@ EXIT CODES:
 			// Determine output path
 			outPath := output
 			if outPath == "" {
-				outPath = ".goshi.yaml"
+				outPath = "goshi.yaml"
 			} else if outPath[0] == '~' {
 				// Expand home directory
 				home, err := os.UserHomeDir()
@@ -284,7 +284,7 @@ EXIT CODES:
 		},
 	}
 
-	cmd.Flags().StringVar(&output, "output", "", "Output path for config file (default: .goshi.yaml)")
+	cmd.Flags().StringVar(&output, "output", "", "Output path for config file (default: goshi.yaml)")
 	cmd.Flags().BoolVar(&overwrite, "overwrite", false, "Overwrite existing file if present")
 	return cmd
 }
