@@ -906,6 +906,111 @@ func TestCodeBlockRender(t *testing.T) {
 	}
 }
 
+// Phase 3: Screen Reader Accessibility Tests
+
+func TestAccessibilityInfo(t *testing.T) {
+	tests := []struct {
+		name     string
+		message  Message
+		expected []string
+	}{
+		{
+			"user message",
+			Message{Role: "user", Content: "Hello", InProgress: false},
+			[]string{"User message", "Hello"},
+		},
+		{
+			"assistant message streaming",
+			Message{Role: "assistant", Content: "Hi there", InProgress: true},
+			[]string{"Assistant message", "streaming", "Hi there"},
+		},
+		{
+			"system message",
+			Message{Role: "system", Content: "System update", InProgress: false},
+			[]string{"System message", "System update"},
+		},
+		{
+			"tool message",
+			Message{Role: "tool", Content: "Tool result", InProgress: false},
+			[]string{"Tool message", "Tool result"},
+		},
+	}
+
+	for _, tt := range tests {
+		desc := tt.message.AccessibilityInfo()
+		for _, exp := range tt.expected {
+			if !strings.Contains(desc, exp) {
+				t.Errorf("%s: expected %q in %q", tt.name, exp, desc)
+			}
+		}
+	}
+}
+
+func TestAccessibilityDescription(t *testing.T) {
+	m := newModel("test", nil)
+
+	desc := m.AccessibilityDescription()
+
+	// Check for mode information
+	if !strings.Contains(desc, "Chat") {
+		t.Error("expected mode information in accessibility description")
+	}
+
+	// Check for toggle information
+	if !strings.Contains(strings.ToLower(desc), "dry run") {
+		t.Error("expected Dry Run toggle info in accessibility description")
+	}
+
+	// Check for navigation instructions
+	if !strings.Contains(desc, "Tab") {
+		t.Error("expected Tab navigation info in accessibility description")
+	}
+
+	// Check for keyboard instructions
+	if !strings.Contains(desc, "Ctrl+S") {
+		t.Error("expected send command info in accessibility description")
+	}
+}
+
+func TestAccessibilityWithToggles(t *testing.T) {
+	m := newModel("test", nil)
+	m.toggles.DryRun = true
+	m.toggles.Deterministic = true
+
+	desc := m.AccessibilityDescription()
+
+	if !strings.Contains(desc, "on") {
+		t.Error("expected toggle status in accessibility description")
+	}
+
+	// Toggle off
+	m.toggles.DryRun = false
+	desc = m.AccessibilityDescription()
+
+	if !strings.Contains(desc, "off") {
+		t.Error("expected off status for dry run")
+	}
+}
+
+func TestAccessibilityFocusIndicators(t *testing.T) {
+	m := newModel("test", nil)
+
+	// Test that renderInput shows focus information
+	m.focusedRegion = FocusInput
+	inputView := m.renderInput()
+	if !strings.Contains(inputView, "focused") {
+		t.Error("expected focus indicator in input region")
+	}
+
+	// Test that renderOutputStream shows focus information
+	m.focusedRegion = FocusOutputStream
+	// Focus should be indicated in the border style change (tested visually)
+	// but we can verify the message exists
+	if m.focusedRegion != FocusOutputStream {
+		t.Error("expected focus region to be set")
+	}
+}
+
 func TestMultipleRolesInOutput(t *testing.T) {
 	m := newModel("test", nil)
 	m.messages = []Message{

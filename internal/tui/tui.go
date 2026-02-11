@@ -676,6 +676,52 @@ func (cb *CodeBlock) ToggleCollapse() {
 	}
 }
 
+// AccessibilityInfo returns screen-reader friendly text for a message
+func (msg *Message) AccessibilityInfo() string {
+	roleLabel := ""
+	switch msg.Role {
+	case "user":
+		roleLabel = "User message"
+	case "assistant":
+		roleLabel = "Assistant message"
+	case "system":
+		roleLabel = "System message"
+	case "tool":
+		roleLabel = "Tool message"
+	default:
+		roleLabel = "Message"
+	}
+
+	status := ""
+	if msg.InProgress {
+		status = ", currently streaming"
+	}
+
+	return fmt.Sprintf("%s%s: %s", roleLabel, status, msg.Content)
+}
+
+// AccessibilityDescription returns a description suitable for ARIA labels
+func (m *model) AccessibilityDescription() string {
+	return fmt.Sprintf(
+		"Goshi TUI. Current mode: %s. Toggles: Dry Run %s, Deterministic %s. "+
+			"Focus: Use Tab to cycle between output stream, inspect panel, and input area. "+
+			"Commands: Ctrl+S to send, Ctrl+M to change mode, Ctrl+D/T to toggle, Escape to quit.",
+		m.mode.String(),
+		func() string {
+			if m.toggles.DryRun {
+				return "on"
+			}
+			return "off"
+		}(),
+		func() string {
+			if m.toggles.Deterministic {
+				return "on"
+			}
+			return "off"
+		}(),
+	)
+}
+
 // renderOutputStream renders the main output stream (left region)
 func (m model) renderOutputStream() string {
 	// Create a border with focus indicator
