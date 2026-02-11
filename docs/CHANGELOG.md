@@ -14,6 +14,12 @@ All notable changes to goshi are documented in this file. The format is based on
   - Documentation: [docs/SECURITY_TESTING.md](docs/SECURITY_TESTING.md)
   - Run with: `go test -tags=offensive -v ./internal/diagnostics/integrity/`
 
+- **Audit Logs** — Session-scoped audit logging with JSONL output and CLI viewer
+  - Audit event model with redaction and tool argument visibility controls
+  - Permission and tool execution events recorded per session
+  - CLI reader: `goshi audit` with filters and JSON/YAML export
+  - Documentation: [docs/AUDIT_LOGS_DESIGN.md](docs/AUDIT_LOGS_DESIGN.md)
+
 ### Planned
 - Enhanced LLM backend selection and fallback logic
 - Extended tool registry with custom tool registration

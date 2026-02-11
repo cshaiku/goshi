@@ -23,6 +23,7 @@ Most documentation lives in the docs/ directory. README stays at the repo root s
 - [Filesystem Safety Model](#filesystem-safety-model)
 - [Execution Pipeline](#execution-pipeline)
 - [LLM Provider Configuration](#llm-provider-configuration)
+- [Audit Logs](#audit-logs)
 - [Testing](#testing)
 - [GitHub Install (Quick Clone)](#github-install-quick-clone)
 - [Build & Run](#build--run)
@@ -453,6 +454,30 @@ export GOSHI_LLM_PROVIDER=auto
 - **Connection Pooling**: Shared HTTP client, keep-alive, configurable limits
 
 For full LLM integration details, see [docs/LLM_INTEGRATION.md](docs/LLM_INTEGRATION.md).
+
+---
+
+## Audit Logs
+
+goshi records permission decisions and tool activity into session-scoped audit logs on your local machine. Logs are JSONL files stored under `.goshi/audit/` (one file per session), designed to be human-readable and easy to export.
+
+**Quick view:**
+```bash
+goshi audit
+```
+
+**Filter and export:**
+```bash
+goshi audit --since=1h --type=tool
+goshi audit --format=json --limit=200
+```
+
+**Configuration highlights:**
+- `audit.tool_arguments_style`: `full | long | short | summaries` (default: summaries)
+- `audit.redact`: redact sensitive values in logs (default: true)
+- `audit.retention_days` / `audit.max_sessions`: retention controls
+
+Design notes and schema details: [docs/AUDIT_LOGS_DESIGN.md](docs/AUDIT_LOGS_DESIGN.md)
 
 ---
 
