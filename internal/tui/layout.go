@@ -6,6 +6,7 @@ type FocusRegion int
 const (
 	FocusOutputStream FocusRegion = iota
 	FocusInspectPanel
+	FocusAuditPanel
 	FocusInput
 )
 
@@ -19,8 +20,12 @@ type Layout struct {
 	OutputStreamWidth  int
 	InspectPanelWidth  int
 	OutputStreamHeight int
+	AuditPanelHeight   int
 	StatusBarHeight    int
 	InputHeight        int
+
+	// State
+	AuditPanelVisible bool
 
 	// Split ratio (0.0 to 1.0)
 	SplitRatio float64
@@ -53,12 +58,27 @@ func (l *Layout) Recalculate(width, height int) {
 	}
 
 	// Calculate vertical dimensions
-	// Output stream gets remaining space after status bar and input
+	// Reserve space for status bar and input
 	totalReserved := l.StatusBarHeight + l.InputHeight
-	if height > totalReserved {
-		l.OutputStreamHeight = height - totalReserved
+
+	// If audit panel is visible, it gets ~1/3 of remaining height, streams get ~2/3
+	if l.AuditPanelVisible {
+		remainingHeight := height - totalReserved
+		l.AuditPanelHeight = remainingHeight / 3
+		l.OutputStreamHeight = remainingHeight - l.AuditPanelHeight
+		if l.OutputStreamHeight < 10 {
+			l.OutputStreamHeight = 10
+		}
+		if l.AuditPanelHeight < 5 {
+			l.AuditPanelHeight = 5
+		}
 	} else {
-		l.OutputStreamHeight = 10 // minimum height
+		l.AuditPanelHeight = 0
+		if height > totalReserved {
+			l.OutputStreamHeight = height - totalReserved
+		} else {
+			l.OutputStreamHeight = 10 // minimum height
+		}
 	}
 }
 

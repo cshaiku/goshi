@@ -1,8 +1,8 @@
 # goshi.sum - Source Code Integrity Manifest
-# Generated: 2026-02-11T06:21:57Z
-# Git Commit: b4c62fcbacf2c6dd7bdf9cc8b68ae85de19175f9
+# Generated: 2026-02-11T06:34:15Z
+# Git Commit: 1d996d2951ec370005bf90133c3d5759a84d43c4
 # Git Branch: main
-# Git Tag: none (dirty)
+# Git Tag: none
 # Go Version: go1.25.6
 #
 # Format: <algorithm> <hash> <file>
@@ -130,13 +130,14 @@ SHA256 a144694380a61eaa9180127018729b77fd27ca0546e3e70997f852f5a8329eec internal
 SHA256 a3c2b5613dbcefd25a6377334afd12507a25c52332fcbc771897bc413a5e51cf internal/selfmodel/model.go
 SHA256 74b97c798829a5650eef390b0a7085f13fcba1f322be45debbb8bfe0f7db9078 internal/session/permissions.go
 SHA256 955c4fde6da91379a6b3a9695459c3df0b4f1b557d62e5c10c3350649302abe7 internal/session/permissions_test.go
-SHA256 3d8d3f6b15520ecc9dcdcf254884117337264c7d60ab901c53944bdedf0f04c5 internal/session/session.go
+SHA256 998379d4b64a8ed34060115f7b4cffebb9e58028e4f59480f80c535e67e7774e internal/session/session.go
 SHA256 931652e24c5f054f890926dffed987f459da7ccf15d9b82f4a2454c51993dae5 internal/session/session_test.go
+SHA256 af8663e7fd98ae0b221135c85aa802fb3a9351b808f5cccf316ff1599d2b790f internal/tui/audit_panel.go
 SHA256 5fa052604bfab2dca8a68be4e087cb59d9243992819c76d9812437e38e846756 internal/tui/inspect_panel.go
-SHA256 2393c42385baf00c1e88570ffebfdef4ec7b375081acb4be570dd7cd586de0c1 internal/tui/layout.go
+SHA256 074f57a468e0f79efd0b25677dbfa874e25e7b4231517c9566da4bbafda7cdcb internal/tui/layout.go
 SHA256 90fde81077bfc419e857f39ebb0e0e4dd33a53b66a8906d5c2fd06be23625360 internal/tui/status_bar.go
 SHA256 d1677f7487f056dd7c001bfc8f1edabba05fc8b35cc8aad30320d416439a2a7a internal/tui/telemetry.go
-SHA256 ba45c8396db8aa6a4dd026f5ba6da06cfa292d6745d7eb0777b0183564240a67 internal/tui/tui.go
+SHA256 ef2473e3177fe76374c953e6cfeb05c5c3657357e4b6e9bcd85525ac173dd20e internal/tui/tui.go
 SHA256 e0143ccf346366187e3831bad909d6cef319cc95e64d97e7752fd1eeb32a666f internal/tui/tui_test.go
 SHA256 7217da49c563b5ed7082d7c0342e1630cdeb4d8370f600f8c9d96522bd646ede internal/verify/basic.go
 SHA256 9ce91075d3da46127aad81be526c41899a988602c3522811361eacb09216238b internal/verify/basic_test.go
@@ -146,8 +147,8 @@ SHA256 30eaf8b2fe4249f6d8831048eea30892f2f25c3ca3232bc30e951a914a504c00 go.mod
 SHA256 ca34e9ed0933aadbe75fb21fee80b2a0c455620feff010adff4fefe9de0a8e91 go.sum
 #
 # Summary:
-# - Source files: 128
-# - Total hashes: 130
-# - Generated: 2026-02-11T06:21:57Z
-# - Commit: b4c62fcbacf2c6dd7bdf9cc8b68ae85de19175f9
+# - Source files: 129
+# - Total hashes: 131
+# - Generated: 2026-02-11T06:34:15Z
+# - Commit: 1d996d2951ec370005bf90133c3d5759a84d43c4
 #

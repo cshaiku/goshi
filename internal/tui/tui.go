@@ -68,17 +68,20 @@ type model struct {
 	textarea     textarea.Model
 	messages     []Message
 	inspectPanel *InspectPanel
+	auditPanel   *AuditPanel
 	statusBar    *StatusBar
 	layout       *Layout
 	telemetry    *Telemetry
 
 	// State
-	ready         bool
-	focusedRegion FocusRegion
-	mode          Mode
-	toggles       InputToggles
-	statusLine    string
-	err           error
+	ready             bool
+	focusedRegion     FocusRegion
+	mode              Mode
+	toggles           InputToggles
+	statusLine        string
+	err               error
+	auditPanelVisible bool
+	auditPanelRefresh int // Counter to refresh audit panel less frequently
 
 	// Integration
 	chatSession  *session.ChatSession
@@ -116,20 +119,29 @@ func newModel(systemPrompt string, sess *session.ChatSession) model {
 	inspectPanel := NewInspectPanel(telemetry)
 	layout := NewLayout()
 
+	// Initialize audit panel
+	auditPanel := NewAuditPanel("")
+	if sess != nil && sess.AuditLogger != nil {
+		auditPanel = NewAuditPanel(sess.AuditLogger.FilePath())
+	}
+
 	return model{
-		viewport:      vp,
-		textarea:      ta,
-		messages:      []Message{},
-		inspectPanel:  inspectPanel,
-		statusBar:     statusBar,
-		layout:        layout,
-		telemetry:     telemetry,
-		focusedRegion: FocusInput,
-		mode:          ModeChat,
-		toggles:       InputToggles{DryRun: false, Deterministic: false},
-		chatSession:   sess,
-		systemPrompt:  systemPrompt,
-		statusLine:    "Ready",
+		viewport:          vp,
+		textarea:          ta,
+		messages:          []Message{},
+		inspectPanel:      inspectPanel,
+		auditPanel:        auditPanel,
+		statusBar:         statusBar,
+		layout:            layout,
+		telemetry:         telemetry,
+		focusedRegion:     FocusInput,
+		mode:              ModeChat,
+		toggles:           InputToggles{DryRun: false, Deterministic: false},
+		chatSession:       sess,
+		systemPrompt:      systemPrompt,
+		statusLine:        "Ready",
+		auditPanelVisible: false,
+		auditPanelRefresh: 0,
 	}
 }
 
@@ -150,6 +162,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.focusedRegion == FocusInspectPanel {
 		// Inspect panel is focused - handle scrolling there
 		ipCmd = m.inspectPanel.Update(msg)
+	} else if m.focusedRegion == FocusAuditPanel {
+		// Audit panel is focused - handle scrolling there
+		_ = m.auditPanel.Update(msg)
 	} else {
 		// Output stream is focused - handle viewport scrolling
 		m.viewport, vpCmd = m.viewport.Update(msg)
@@ -157,6 +172,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		// Handle string keys for single character inputs
+		if msg.Type == tea.KeyRunes && len(msg.Runes) > 0 {
+			switch msg.Runes[0] {
+			case 'a', 'A':
+				// Toggle audit panel
+				m.auditPanelVisible = !m.auditPanelVisible
+				m.layout.AuditPanelVisible = m.auditPanelVisible
+				// Reset focus if toggling off
+				if !m.auditPanelVisible && m.focusedRegion == FocusAuditPanel {
+					m.focusedRegion = FocusInput
+				}
+				return m, nil
+			}
+		}
+
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
@@ -175,12 +205,37 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.toggles.Deterministic = !m.toggles.Deterministic
 			return m, nil
 		case tea.KeyTab:
-			// Cycle focus forward
-			m.focusedRegion = (m.focusedRegion + 1) % 3
+			// Cycle focus forward (only through visible regions)
+			if m.auditPanelVisible {
+				// Cycle through all 4 regions: 0->1->2->3->0
+				m.focusedRegion = (m.focusedRegion + 1) % 4
+			} else {
+				// Skip audit panel: cycle 0->1->3->0
+				cycle := []FocusRegion{FocusOutputStream, FocusInspectPanel, FocusInput}
+				for i, region := range cycle {
+					if region == m.focusedRegion {
+						m.focusedRegion = cycle[(i+1)%len(cycle)]
+						break
+					}
+				}
+			}
 			return m, nil
 		case tea.KeyShiftTab:
 			// Cycle focus backward
-			m.focusedRegion = (m.focusedRegion + 2) % 3
+			if m.auditPanelVisible {
+				// Cycle backward through all 4 regions: 3->2->1->0->3
+				m.focusedRegion = (m.focusedRegion + 3) % 4
+			} else {
+				// Skip audit panel: cycle 0->3->1->0
+				cycle := []FocusRegion{FocusOutputStream, FocusInspectPanel, FocusInput}
+				for i, region := range cycle {
+					if region == m.focusedRegion {
+						idx := (i - 1 + len(cycle)) % len(cycle)
+						m.focusedRegion = cycle[idx]
+						break
+					}
+				}
+			}
 			return m, nil
 		}
 
@@ -197,6 +252,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Update inspect panel dimensions
 		m.inspectPanel.SetSize(m.layout.InspectPanelWidth, m.layout.OutputStreamHeight)
+
+		// Update audit panel dimensions if visible
+		if m.auditPanelVisible {
+			m.auditPanel.SetSize(msg.Width, m.layout.AuditPanelHeight)
+		}
 
 		if !m.ready {
 			m.updateViewportContent()
@@ -319,6 +379,15 @@ func (m model) View() string {
 	m.inspectPanel.UpdateMetrics(metrics.RuleLines, metrics.ConstraintCount)
 	m.inspectPanel.SetGuardrails(true)
 
+	// Refresh audit panel occasionally (every 10 updates)
+	if m.auditPanelVisible {
+		m.auditPanelRefresh++
+		if m.auditPanelRefresh >= 10 {
+			m.auditPanel.Refresh()
+			m.auditPanelRefresh = 0
+		}
+	}
+
 	// Update telemetry status and capabilities based on chat session
 	if m.chatSession != nil && m.chatSession.Permissions != nil {
 		perms := m.chatSession.Permissions
@@ -357,12 +426,31 @@ func (m model) View() string {
 	// Render inspect panel (right side) with system prompt
 	inspectPanel := m.inspectPanel.Render(m.systemPrompt)
 
-	// Combine horizontally using lipgloss
+	// Combine output stream and inspect panel horizontally
 	topRegion := lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		outputStream,
 		inspectPanel,
 	)
+
+	// Build the full view
+	var mainContent string
+	if m.auditPanelVisible {
+		// Include audit panel
+		auditReady := m.auditPanel.ready
+		auditPanel := ""
+		if auditReady {
+			auditPanel = m.auditPanel.Render()
+		}
+
+		mainContent = lipgloss.JoinVertical(
+			lipgloss.Left,
+			topRegion,
+			auditPanel,
+		)
+	} else {
+		mainContent = topRegion
+	}
 
 	// Render status bar (2 lines)
 	statusBar := m.statusBar.Render(m.layout.TerminalWidth)
@@ -373,7 +461,7 @@ func (m model) View() string {
 	// Combine vertically
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
-		topRegion,
+		mainContent,
 		statusBar,
 		inputArea,
 	)
@@ -583,11 +671,20 @@ func (m model) renderInput() string {
 
 	toglesDisplay := fmt.Sprintf(" │ Toggles: %s %s", dryRunIndicator, deterministic)
 
+	// Audit panel indicator
+	auditDisplay := ""
+	if m.auditPanelVisible {
+		auditDisplay = " │ Audit: ✓ (press 'A' to hide)"
+	} else {
+		auditDisplay = " │ Audit: ○ (press 'A' to show)"
+	}
+
 	return fmt.Sprintf(
-		"┌─ Input (Ctrl+S to send, Tab to cycle focus, Ctrl+D/T for toggles)%s%s%s\n%s",
+		"┌─ Input (Ctrl+S to send, Tab to cycle focus, Ctrl+D/T for toggles, A to toggle audit)%s%s%s%s\n%s",
 		focusIndicator,
 		modeDisplay,
 		toglesDisplay,
+		auditDisplay,
 		m.textarea.View(),
 	)
 }
