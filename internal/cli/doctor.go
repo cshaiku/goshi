@@ -10,6 +10,7 @@ import (
 	"github.com/cshaiku/goshi/internal/config"
 	"github.com/cshaiku/goshi/internal/detect"
 	"github.com/cshaiku/goshi/internal/diagnose"
+	"github.com/cshaiku/goshi/internal/diagnostics/integrity"
 	"github.com/cshaiku/goshi/internal/diagnostics/modules"
 	"gopkg.in/yaml.v3"
 )
@@ -31,6 +32,8 @@ CHECKS PERFORMED:
   - Binary availability (git, curl, jq)
   - Basic configuration validation
   - Environmental dependencies
+  - Go module integrity
+  - Source file integrity (via goshi.sum)
 
 SEVERITY LEVELS:
   OK      - No issues detected
@@ -99,6 +102,11 @@ SEE ALSO:
 			modDiag := modules.NewModuleDiagnostic()
 			modIssues := modDiag.Run()
 			diag.Issues = append(diag.Issues, modIssues...)
+
+			// --- integrity diagnostics ---
+			integrityDiag := integrity.NewIntegrityDiagnostic()
+			integrityIssues := integrityDiag.Run()
+			diag.Issues = append(diag.Issues, integrityIssues...)
 
 			// Output format selection
 			outFmt := format

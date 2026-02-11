@@ -4,6 +4,16 @@ All notable changes to goshi are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Added
+- **Source Integrity Diagnostics** — Offensive security testing framework for validating goshi.sum integrity checking
+  - `IntegrityDiagnostic` package with SHA256 file verification against manifest
+  - Offensive test suite with build tag isolation (`//go:build offensive`)
+  - Safe file tampering utilities with automatic backup/restore pattern
+  - Integration into `goshi doctor` command for integrity validation
+  - Test scenarios: file tampering, missing files, multiple modifications, severity validation
+  - Documentation: [docs/SECURITY_TESTING.md](docs/SECURITY_TESTING.md)
+  - Run with: `go test -tags=offensive -v ./internal/diagnostics/integrity/`
+
 ### Planned
 - Enhanced LLM backend selection and fallback logic
 - Extended tool registry with custom tool registration
