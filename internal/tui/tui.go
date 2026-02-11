@@ -69,6 +69,7 @@ type model struct {
 	messages     []Message
 	inspectPanel *InspectPanel
 	auditPanel   *AuditPanel
+	helpPanel    *HelpPanel
 	statusBar    *StatusBar
 	layout       *Layout
 	telemetry    *Telemetry
@@ -82,6 +83,7 @@ type model struct {
 	err               error
 	auditPanelVisible bool
 	auditPanelRefresh int // Counter to refresh audit panel less frequently
+	helpPanelVisible  bool
 
 	// Integration
 	chatSession  *session.ChatSession
@@ -117,6 +119,7 @@ func newModel(systemPrompt string, sess *session.ChatSession) model {
 
 	statusBar := NewStatusBar(telemetry)
 	inspectPanel := NewInspectPanel(telemetry)
+	helpPanel := NewHelpPanel()
 	layout := NewLayout()
 
 	// Initialize audit panel
@@ -131,6 +134,7 @@ func newModel(systemPrompt string, sess *session.ChatSession) model {
 		messages:          []Message{},
 		inspectPanel:      inspectPanel,
 		auditPanel:        auditPanel,
+		helpPanel:         helpPanel,
 		statusBar:         statusBar,
 		layout:            layout,
 		telemetry:         telemetry,
@@ -141,6 +145,7 @@ func newModel(systemPrompt string, sess *session.ChatSession) model {
 		systemPrompt:      systemPrompt,
 		statusLine:        "Ready",
 		auditPanelVisible: false,
+		helpPanelVisible:  false,
 		auditPanelRefresh: 0,
 	}
 }
@@ -188,6 +193,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if !m.auditPanelVisible && m.focusedRegion == FocusAuditPanel {
 				m.focusedRegion = FocusInput
 			}
+			return m, nil
+		case tea.KeyCtrlH:
+			// Toggle help panel
+			m.helpPanelVisible = !m.helpPanelVisible
 			return m, nil
 		case tea.KeyCtrlL:
 			// Cycle through modes
@@ -249,6 +258,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Update inspect panel dimensions
 		m.inspectPanel.SetSize(m.layout.InspectPanelWidth, m.layout.OutputStreamHeight)
+
+		// Update help panel dimensions
+		m.helpPanel.SetSize(msg.Width-4, msg.Height-8)
 
 		// Update audit panel dimensions if visible
 		if m.auditPanelVisible {
@@ -432,7 +444,14 @@ func (m model) View() string {
 
 	// Build the full view
 	var mainContent string
-	if m.auditPanelVisible {
+	if m.helpPanelVisible {
+		// Show help panel instead of other panels
+		helpPanel := ""
+		if m.helpPanel.ready {
+			helpPanel = m.helpPanel.Render()
+		}
+		mainContent = helpPanel
+	} else if m.auditPanelVisible {
 		// Include audit panel
 		auditReady := m.auditPanel.ready
 		auditPanel := ""
@@ -677,7 +696,7 @@ func (m model) renderInput() string {
 	}
 
 	return fmt.Sprintf(
-		"┌─ Input (Enter to send, Shift/Ctrl+Enter for newline, Tab to cycle focus, Ctrl+L for mode, Ctrl+D/T for toggles, Ctrl+A for audit)%s%s%s%s\n%s",
+		"┌─ Input (Enter: send, Tab: focus, Ctrl+L: mode, Ctrl+D/T: toggle, Ctrl+A: audit, Ctrl+H: help, Ctrl+Q: quit)%s%s%s%s\n%s",
 		focusIndicator,
 		modeDisplay,
 		toglesDisplay,
