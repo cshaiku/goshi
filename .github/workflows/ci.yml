@@ -10,6 +10,10 @@ on:
 env:
   GO_VERSION: '1.24.2'
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   test:
     name: Test
@@ -106,6 +110,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test, lint, security]
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -133,7 +139,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add goshi.sum
           git commit -m "chore: Update source integrity manifest [skip ci]"
-          git push
+          git push origin main
 
   build:
     name: Build
