@@ -62,10 +62,15 @@ type Config struct {
 var cachedConfig *Config
 
 // LoadDefaults returns a Config with safe defaults
+// Available Ollama models:
+//   - qwen3:8b-q8_0 (recommended, 8.9GB, high quality)
+//   - llama3:latest (4.7GB, good general purpose)
+//   - llama3.1:8b (4.9GB, newer version)
+//   - qwen2.5-coder:1.5b-base (986MB, code specialized)
 func LoadDefaults() Config {
 	return Config{
 		LLM: LLMConfig{
-			Model:          "mistral",
+			Model:          "qwen3:8b-q8_0",
 			Provider:       "ollama",
 			Temperature:    0,
 			MaxTokens:      4096,

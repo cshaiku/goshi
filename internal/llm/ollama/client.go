@@ -51,9 +51,10 @@ type Client struct {
 }
 
 // NewClient creates an Ollama backend client
+// Supported models: qwen3:8b-q8_0, llama3:latest, llama3.1:8b, qwen2.5-coder:1.5b-base
 func New(model string) *Client {
 	if model == "" || model == "ollama" {
-		model = "llama3"
+		model = "qwen3:8b-q8_0"
 	}
 	return &Client{
 		baseURL:  "http://127.0.0.1:11434",
