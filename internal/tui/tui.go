@@ -27,7 +27,7 @@ func Run(systemPrompt string, sess *session.ChatSession) error {
 
 // Message represents a chat message
 type Message struct {
-	Role       string // "user" or "assistant"
+	Role       string // "user", "assistant", "system", or "tool"
 	Content    string
 	InProgress bool // True if still streaming
 }
@@ -483,13 +483,19 @@ func (m *model) updateViewportContent() {
 
 	for i := startIdx; i < len(m.messages); i++ {
 		msg := m.messages[i]
-		if msg.Role == "user" {
-			sb.WriteString(styleUserMessage(msg.Content))
-		} else {
-			content := msg.Content
-			if msg.InProgress {
-				content += "▊" // Show cursor for streaming
-			}
+		content := msg.Content
+		if msg.InProgress {
+			content += "▊" // Show cursor for streaming
+		}
+
+		switch msg.Role {
+		case "user":
+			sb.WriteString(styleUserMessage(content))
+		case "system":
+			sb.WriteString(styleSystemMessage(content))
+		case "tool":
+			sb.WriteString(styleToolMessage(content))
+		default: // "assistant" or any other
 			sb.WriteString(styleAssistantMessage(content))
 		}
 		sb.WriteString("\n\n")
@@ -546,6 +552,18 @@ var (
 			Foreground(lipgloss.Color("86")).
 			PaddingLeft(2)
 
+	systemStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("208")).
+			PaddingLeft(2)
+
+	toolStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("141")).
+			PaddingLeft(2)
+
+	roleStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("250"))
+
 	statusStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("240")).
 			Italic(true)
@@ -560,9 +578,21 @@ var (
 )
 
 func styleHeader(text string) string      { return headerStyle.Render(text) }
-func styleUserMessage(text string) string { return userStyle.Render("You: " + text) }
+func styleUserMessage(text string) string {
+	role := roleStyle.Render("USER: ")
+	return userStyle.Render(role + text)
+}
 func styleAssistantMessage(text string) string {
-	return assistantStyle.Render("Goshi: " + text)
+	role := roleStyle.Render("ASSISTANT: ")
+	return assistantStyle.Render(role + text)
+}
+func styleSystemMessage(text string) string {
+	role := roleStyle.Render("SYSTEM: ")
+	return systemStyle.Render(role + text)
+}
+func styleToolMessage(text string) string {
+	role := roleStyle.Render("TOOL: ")
+	return toolStyle.Render(role + text)
 }
 func styleStatus(text string) string  { return statusStyle.Render(text) }
 func styleError(text string) string   { return errorStyle.Render(text) }

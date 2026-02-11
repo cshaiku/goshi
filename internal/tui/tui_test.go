@@ -592,3 +592,84 @@ func TestInspectPanelScrolling(t *testing.T) {
 		t.Error("expected panel to have content after scroll")
 	}
 }
+
+// Phase 3: Input & Output Enhancements Tests
+
+func TestRoleIdentifiers(t *testing.T) {
+	tests := []struct {
+		name         string
+		role         string
+		content      string
+		expectedRole string
+	}{
+		{"user message", "user", "Hello", "USER:"},
+		{"assistant message", "assistant", "Hi there", "ASSISTANT:"},
+		{"system message", "system", "System notification", "SYSTEM:"},
+		{"tool message", "tool", "Tool result", "TOOL:"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newModel("test", nil)
+			m.messages = []Message{
+				{Role: tt.role, Content: tt.content, InProgress: false},
+			}
+
+			m.updateViewportContent()
+			content := m.viewport.View()
+
+			if !strings.Contains(content, tt.expectedRole) {
+				t.Errorf("expected output to contain %q role identifier, got: %s", tt.expectedRole, content)
+			}
+
+			if !strings.Contains(content, tt.content) {
+				t.Errorf("expected output to contain message content %q", tt.content)
+			}
+		})
+	}
+}
+
+func TestRoleIdentifierStyling(t *testing.T) {
+	// Test that style functions produce output with role identifiers
+	userMsg := styleUserMessage("test user message")
+	if !strings.Contains(userMsg, "USER:") {
+		t.Error("expected USER: in styled user message")
+	}
+
+	assistantMsg := styleAssistantMessage("test assistant message")
+	if !strings.Contains(assistantMsg, "ASSISTANT:") {
+		t.Error("expected ASSISTANT: in styled assistant message")
+	}
+
+	systemMsg := styleSystemMessage("test system message")
+	if !strings.Contains(systemMsg, "SYSTEM:") {
+		t.Error("expected SYSTEM: in styled system message")
+	}
+
+	toolMsg := styleToolMessage("test tool message")
+	if !strings.Contains(toolMsg, "TOOL:") {
+		t.Error("expected TOOL: in styled tool message")
+	}
+}
+
+func TestMultipleRolesInOutput(t *testing.T) {
+	m := newModel("test", nil)
+	m.messages = []Message{
+		{Role: "user", Content: "Question", InProgress: false},
+		{Role: "assistant", Content: "Answer", InProgress: false},
+		{Role: "tool", Content: "Result", InProgress: false},
+		{Role: "system", Content: "Status", InProgress: false},
+	}
+
+	m.updateViewportContent()
+	content := m.viewport.View()
+
+	// All role identifiers should be present
+	roles := []string{"USER:", "ASSISTANT:", "TOOL:", "SYSTEM:"}
+	for _, role := range roles {
+		if !strings.Contains(content, role) {
+			t.Errorf("expected output to contain %q role identifier", role)
+		}
+	}
+}
+
