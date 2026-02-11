@@ -6,6 +6,8 @@ Its primary goal is to be **safe, diagnosable, auditable, and self-healing — f
 
 This project explores a constrained, local-first model of AI-assisted tooling where **no action is implicit and no mutation is silent**.
 
+Most documentation lives in the docs/ directory. README stays at the repo root so GitHub renders it on the main project page.
+
 ---
 
 ## Interactive Modes
@@ -134,13 +136,13 @@ The self model is treated as **authoritative** and violations are considered saf
 
 ### Diagnostics-First Execution
 
-All actions are gated by diagnostics phases, executed in order:
+All actions are gated by diagnostic stages, executed in order:
 
 1. Safety invariants
 2. Self-model compliance
 3. Environment checks
 
-If any phase fails, execution halts.
+If any stage fails, execution halts.
 
 ---
 
@@ -179,7 +181,7 @@ All messages are converted to a unified JSON schema for transmission and persist
 - Timestamps and working directory context
 - Retrievable in human-readable format via `session.GetAuditLog()`
 
-### 6-Phase Chat Flow
+### Six-Step Chat Flow
 
 The chat loop implements a strict execution pipeline:
 
@@ -190,7 +192,7 @@ The chat loop implements a strict execution pipeline:
 5. **Act** — Execute tool or deny with permission error
 6. **Report** — Add tool result to message history
 
-Each phase is independent and can be inspected. Phases 4-6 require explicit tool routing through permission checks.
+Each step is independent and can be inspected. Steps 4-6 require explicit tool routing through permission checks.
 
 ### Chat Session Management
 
@@ -266,7 +268,7 @@ The parser is conservative and falls back to text mode if JSON parsing fails. To
 
 ## Filesystem Safety Model
 
-goshi uses a **two-phase, proposal-based filesystem model**.
+goshi uses a **two-step, proposal-based filesystem model**.
 
 ### Key Properties
 
@@ -314,7 +316,7 @@ goshi follows a deterministic, auditable pipeline:
 4. **Execute** — Apply actions (dry-run by default)
 5. **Verify** — Confirm repairs were successful
 
-Each phase is independent, deterministic, and inspectable.
+Each step is independent, deterministic, and inspectable.
 
 ---
 
@@ -416,14 +418,14 @@ export GOSHI_LLM_PROVIDER=auto
 | **Internet Required** | ❌ No | ✅ Yes |
 | **Setup Complexity** | Medium (install + pull models) | Low (just API key) |
 | **Model Selection** | Any Ollama-compatible model | OpenAI models only |
-| **Streaming** | ✅ Yes | ✅ Yes (Phase 2) |
-| **Tool Calling** | ✅ Yes (prompt-based) | ✅ Yes (Phase 2) |
-| **Cost Monitoring** | N/A | ✅ Yes (Phase 3) |
-| **Circuit Breaker** | ❌ No | ✅ Yes (Phase 3) |
-| **Connection Pooling** | ✅ Yes | ✅ Yes (Phase 3) |
-| **Retry Logic** | ✅ Basic | ✅ Advanced (Phase 2/3) |
+| **Streaming** | ✅ Yes | ✅ Yes |
+| **Tool Calling** | ✅ Yes (prompt-based) | ✅ Yes |
+| **Cost Monitoring** | N/A | ✅ Yes |
+| **Circuit Breaker** | ❌ No | ✅ Yes |
+| **Connection Pooling** | ✅ Yes | ✅ Yes |
+| **Retry Logic** | ✅ Basic | ✅ Exponential backoff |
 
-**Phase 3 Optimization Features (OpenAI):**
+**OpenAI Optimization Features:**
 - **Cost Tracking**: Per-model pricing, session limits, warning thresholds
 - **Circuit Breaker**: Auto-recovery from failures, 3-state protection
 - **Connection Pooling**: Shared HTTP client, keep-alive, configurable limits
@@ -434,7 +436,7 @@ For full LLM integration details, see [docs/LLM_INTEGRATION.md](docs/LLM_INTEGRA
 
 ## Testing
 
-goshi includes comprehensive test coverage for reliability and security across all phases:
+goshi includes comprehensive test coverage for reliability and security across the system:
 
 **Core Packages:**
 - **Config** (51 tests): Configuration validation, environment variable handling, parameter bounds
@@ -445,14 +447,14 @@ goshi includes comprehensive test coverage for reliability and security across a
 - **Execution** (9 tests): Dry-run vs actual execution, error handling
 - **Verification** (8 tests): Pass/fail determination, failure reporting
 
-**LLM Integration (Phase 1-4):**
+**LLM Integration:**
 - **Messages & Types** (7 tests): Structured message types, message conversion, validation
 - **Tool Registry** (8 tests): Tool discovery, schema validation, registry population
 - **Structured Parsing** (15 tests): JSON responses, tool pattern detection, error handling
 - **Tool Router** (11 tests): Permission enforcement, tool dispatch, error responses
 - **Permission Model** (8 tests): Permission grant/deny, audit logging, multi-capability
 - **Chat Session** (5 tests): Session initialization, message history, permission state
-- **Integration** (18 tests): End-to-end tool execution, permission enforcement, 6-phase flow validation
+- **Integration** (18 tests): End-to-end tool execution, permission enforcement, six-step flow validation
 
 **TUI Integration (Bubble Tea):**
 - **TUI Implementation** (9 tests): Model initialization, window resize, keyboard handling, message rendering
