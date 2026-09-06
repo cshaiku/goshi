@@ -4,7 +4,8 @@
 
 APP_NAME := goshi
 
-GO       := go
+GO       ?= go
+PREFIX   ?= $(HOME)/.local
 GOFLAGS  :=
 
 # ------------------------------------------------------------------------------
@@ -18,17 +19,18 @@ all: build
 # Build
 # ------------------------------------------------------------------------------
 
-.PHONY: build
-build:
-	$(GO) build $(GOFLAGS) -o $(APP_NAME)
+.PHONY: build compile
+build: install
+compile:
+	GO="$(GO)" PREFIX="$(PREFIX)" bash scripts/build-local.sh --compile-only
 
 # ------------------------------------------------------------------------------
 # Run
 # ------------------------------------------------------------------------------
 
 .PHONY: run
-run: build
-	./$(APP_NAME)
+run: compile
+	./.build/$(APP_NAME)
 
 # ------------------------------------------------------------------------------
 # Test / Verify
@@ -60,7 +62,7 @@ clean:
 
 .PHONY: install
 install:
-	$(GO) install .
+	GO="$(GO)" PREFIX="$(PREFIX)" bash scripts/build-local.sh
 
 # ------------------------------------------------------------------------------
 # Safety helpers
@@ -80,10 +82,10 @@ check-dirty:
 .PHONY: help
 help:
 	@echo "Targets:"
-	@echo "  build         Build binary to ./goshi"
+	@echo "  build         Build and install ~/.local/bin/goshi"
 	@echo "  run           Build and run"
 	@echo "  test          Run tests"
 	@echo "  vet           Run go vet"
 	@echo "  fmt           Run go fmt"
 	@echo "  clean         Remove build artifacts"
-	@echo "  install       go install (developer-local)"
+	@echo "  install       Build and install using PREFIX (default ~/.local)"

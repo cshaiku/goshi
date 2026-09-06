@@ -33,6 +33,26 @@ Most documentation lives in the docs/ directory. README stays at the repo root s
 
 ---
 
+## Local developer installation
+
+```sh
+make build                       # compile and install ~/.local/bin/goshi
+make compile                     # compile only to .build/goshi (CI/cross-builds)
+make build PREFIX="$HOME/.local" # explicit installation prefix
+```
+
+`make install` is equivalent to `make build`. Put `$HOME/.local/bin` before
+Homebrew on PATH. The installed executable is copied out of the checkout, so
+moving the source repo does not break it. `scripts/build-local.sh` stages builds,
+rejects cross-architecture installation, and retains previous installs under
+`$HOME/.local/share/goshi/installs/`. The current `install-info.txt` in that tool's
+share directory records source path, commit, dirty state, Go version, and SHA-256.
+Raw `go build` and release/CI scripts remain compile/package-only.
+Run `python3 scripts/test-local-install.py` for isolated installer regression checks.
+
+The default self-model is installed at `$HOME/.local/share/goshi/goshi.self.model.yaml`; a local project self-model still takes precedence.
+
+
 ## Interactive Modes
 
 goshi offers two modes of interaction:

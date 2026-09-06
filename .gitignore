@@ -24,3 +24,6 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local developer compile output
+/.build/
