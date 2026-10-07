@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"github.com/cshaiku/goshi/internal/toolbridge"
+	"github.com/cshaiku/goshi/internal/version"
 	"os"
 
 	"github.com/cshaiku/goshi/internal/config"
@@ -127,6 +129,7 @@ func Execute(rt *Runtime) {
 
 	// Register all subcommands
 	rootCmd.AddCommand(
+		newToolsCmd(),
 		newFSCommand(),
 		newAuditCommand(),
 		newDoctorCmd(&cfg),
@@ -138,4 +141,14 @@ func Execute(rt *Runtime) {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func newToolsCmd() *cobra.Command {
+	return &cobra.Command{Use: "tools", Short: "Discover companions and compose optional local reports", DisableFlagParsing: true, RunE: func(cmd *cobra.Command, args []string) error {
+		_, code := toolbridge.Handle(append([]string{"tools"}, args...), "goshi", version.Version, cmd.OutOrStdout(), cmd.ErrOrStderr())
+		if code != 0 {
+			return fmt.Errorf("tool workflow failed")
+		}
+		return nil
+	}}
 }

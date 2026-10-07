@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "source": "Starlit-Digital/bram/internal/toolbridge",
+  "version": "1.0.0",
+  "license": "0BSD",
+  "files": {
+    "bridge.go": "0e1b4747b880a2fa298716a1f32fee4a4e0dbd39ddafc65b5c984bc1471a10cf",
+    "bridge_test.go": "93e7db13dc8c9afd5e423ead95d7975d0cb0160edc192d8c616491bea9041c03",
+    "LICENSE": "e6af32b798d5e0b53be4b047a63aef451b80c99c62724ecf024e0b05eec5756e"
+  }
+}

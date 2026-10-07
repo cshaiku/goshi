@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"strings"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/cshaiku/goshi/internal/llm"
 	"github.com/cshaiku/goshi/internal/selfmodel"
 	"github.com/cshaiku/goshi/internal/session"
+	"github.com/mattn/go-runewidth"
 )
 
 // Run starts the TUI application
@@ -156,21 +158,32 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
-		taCmd tea.Cmd
-		vpCmd tea.Cmd
-		ipCmd tea.Cmd
+		taCmd   tea.Cmd
+		vpCmd   tea.Cmd
+		helpCmd tea.Cmd
 	)
 
-	m.textarea, taCmd = m.textarea.Update(msg)
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.Type {
+		case tea.KeyCtrlC, tea.KeyCtrlQ:
+			return m, tea.Quit
+		case tea.KeyCtrlH:
+			m.helpPanelVisible = !m.helpPanelVisible
+			return m, nil
+		}
+
+		if m.helpPanelVisible {
+			helpCmd = m.helpPanel.Update(msg)
+			return m, helpCmd
+		}
+	}
+
+	if !m.helpPanelVisible {
+		m.textarea, taCmd = m.textarea.Update(msg)
+	}
 
 	// Route viewport/scrolling updates based on focused region
-	if m.focusedRegion == FocusInspectPanel {
-		// Inspect panel is focused - handle scrolling there
-		ipCmd = m.inspectPanel.Update(msg)
-	} else if m.focusedRegion == FocusAuditPanel {
-		// Audit panel is focused - handle scrolling there
-		_ = m.auditPanel.Update(msg)
-	} else {
+	if m.focusedRegion == FocusOutputStream {
 		// Output stream is focused - handle viewport scrolling
 		m.viewport, vpCmd = m.viewport.Update(msg)
 	}
@@ -178,26 +191,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
-		case tea.KeyCtrlC, tea.KeyCtrlQ:
-			return m, tea.Quit
 		case tea.KeyEnter:
 			// Send message only when focused on input
 			if m.focusedRegion == FocusInput {
 				return m.handleSendMessage()
 			}
-		case tea.KeyCtrlA:
-			// Toggle audit panel
-			m.auditPanelVisible = !m.auditPanelVisible
-			m.layout.AuditPanelVisible = m.auditPanelVisible
-			// Reset focus if toggling off
-			if !m.auditPanelVisible && m.focusedRegion == FocusAuditPanel {
-				m.focusedRegion = FocusInput
-			}
-			return m, nil
-		case tea.KeyCtrlH:
-			// Toggle help panel
-			m.helpPanelVisible = !m.helpPanelVisible
-			return m, nil
 		case tea.KeyCtrlL:
 			// Cycle through modes
 			m.mode = (m.mode + 1) % 3
@@ -211,35 +209,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.toggles.Deterministic = !m.toggles.Deterministic
 			return m, nil
 		case tea.KeyTab:
-			// Cycle focus forward (only through visible regions)
-			if m.auditPanelVisible {
-				// Cycle through all 4 regions: 0->1->2->3->0
-				m.focusedRegion = (m.focusedRegion + 1) % 4
-			} else {
-				// Skip audit panel: cycle 0->1->3->0
-				cycle := []FocusRegion{FocusOutputStream, FocusInspectPanel, FocusInput}
-				for i, region := range cycle {
-					if region == m.focusedRegion {
-						m.focusedRegion = cycle[(i+1)%len(cycle)]
-						break
-					}
+			// Cycle focus forward (output <-> input)
+			cycle := []FocusRegion{FocusOutputStream, FocusInput}
+			for i, region := range cycle {
+				if region == m.focusedRegion {
+					m.focusedRegion = cycle[(i+1)%len(cycle)]
+					break
 				}
 			}
 			return m, nil
 		case tea.KeyShiftTab:
-			// Cycle focus backward
-			if m.auditPanelVisible {
-				// Cycle backward through all 4 regions: 3->2->1->0->3
-				m.focusedRegion = (m.focusedRegion + 3) % 4
-			} else {
-				// Skip audit panel: cycle 0->3->1->0
-				cycle := []FocusRegion{FocusOutputStream, FocusInspectPanel, FocusInput}
-				for i, region := range cycle {
-					if region == m.focusedRegion {
-						idx := (i - 1 + len(cycle)) % len(cycle)
-						m.focusedRegion = cycle[idx]
-						break
-					}
+			// Cycle focus backward (output <-> input)
+			cycle := []FocusRegion{FocusOutputStream, FocusInput}
+			for i, region := range cycle {
+				if region == m.focusedRegion {
+					idx := (i - 1 + len(cycle)) % len(cycle)
+					m.focusedRegion = cycle[idx]
+					break
 				}
 			}
 			return m, nil
@@ -250,22 +236,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.layout.Recalculate(msg.Width, msg.Height)
 
 		// Update viewport dimensions
-		m.viewport.Width = m.layout.OutputStreamWidth - 2
+		contentWidth := m.layout.OutputStreamWidth - 4
+		if contentWidth < 10 {
+			contentWidth = 10
+		}
+		m.viewport.Width = contentWidth
 		m.viewport.Height = m.layout.OutputStreamHeight - 2
 
 		// Update textarea dimensions
 		m.textarea.SetWidth(m.layout.OutputStreamWidth - 4)
 
-		// Update inspect panel dimensions
-		m.inspectPanel.SetSize(m.layout.InspectPanelWidth, m.layout.OutputStreamHeight)
-
 		// Update help panel dimensions
 		m.helpPanel.SetSize(msg.Width-4, msg.Height-8)
-
-		// Update audit panel dimensions if visible
-		if m.auditPanelVisible {
-			m.auditPanel.SetSize(msg.Width, m.layout.AuditPanelHeight)
-		}
 
 		if !m.ready {
 			m.updateViewportContent()
@@ -372,7 +354,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	return m, tea.Batch(taCmd, vpCmd, ipCmd)
+	return m, tea.Batch(taCmd, vpCmd)
 }
 
 func (m model) View() string {
@@ -383,19 +365,11 @@ func (m model) View() string {
 	// Update status bar metrics
 	metrics := selfmodel.ComputeLawMetrics(m.systemPrompt)
 	m.statusBar.UpdateMetrics(metrics.RuleLines, metrics.ConstraintCount)
+	m.statusBar.UpdateMode(m.mode.String())
 
-	// Update inspect panel metrics
+	// Update inspect panel metrics (used for top bar content)
 	m.inspectPanel.UpdateMetrics(metrics.RuleLines, metrics.ConstraintCount)
 	m.inspectPanel.SetGuardrails(true)
-
-	// Refresh audit panel occasionally (every 10 updates)
-	if m.auditPanelVisible {
-		m.auditPanelRefresh++
-		if m.auditPanelRefresh >= 10 {
-			m.auditPanel.Refresh()
-			m.auditPanelRefresh = 0
-		}
-	}
 
 	// Update telemetry status and capabilities based on chat session
 	if m.chatSession != nil && m.chatSession.Permissions != nil {
@@ -429,18 +403,10 @@ func (m model) View() string {
 		m.telemetry.UpdateMemory(len(m.chatSession.Messages))
 	}
 
-	// Render output stream (left side)
+	// Render output stream (full width)
 	outputStream := m.renderOutputStream()
-
-	// Render inspect panel (right side) with system prompt
-	inspectPanel := m.inspectPanel.Render(m.systemPrompt)
-
-	// Combine output stream and inspect panel horizontally
-	topRegion := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		outputStream,
-		inspectPanel,
-	)
+	// Render top bar (two lines)
+	topBar := m.renderTopBar(metrics)
 
 	// Build the full view
 	var mainContent string
@@ -451,35 +417,26 @@ func (m model) View() string {
 			helpPanel = m.helpPanel.Render()
 		}
 		mainContent = helpPanel
-	} else if m.auditPanelVisible {
-		// Include audit panel
-		auditReady := m.auditPanel.ready
-		auditPanel := ""
-		if auditReady {
-			auditPanel = m.auditPanel.Render()
-		}
-
+	} else {
 		mainContent = lipgloss.JoinVertical(
 			lipgloss.Left,
-			topRegion,
-			auditPanel,
+			topBar,
+			outputStream,
 		)
-	} else {
-		mainContent = topRegion
 	}
-
-	// Render status bar (2 lines)
-	statusBar := m.statusBar.Render(m.layout.TerminalWidth)
 
 	// Render input area
 	inputArea := m.renderInput()
+
+	// Render status bar (single line)
+	statusBar := m.statusBar.Render(m.layout.TerminalWidth)
 
 	// Combine vertically
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		mainContent,
-		statusBar,
 		inputArea,
+		statusBar,
 	)
 }
 
@@ -620,12 +577,22 @@ func executeTool(sess *session.ChatSession, action *llm.ActionCall) tea.Cmd {
 
 func (m *model) updateViewportContent() {
 	var sb strings.Builder
+	contentWidth := m.viewport.Width
+	if contentWidth < 10 {
+		contentWidth = 10
+	}
+	messageWidth := contentWidth - 2
+	if messageWidth < 10 {
+		messageWidth = 10
+	}
 
-	sb.WriteString(styleWelcome("Welcome to Goshi TUI\n\nCommands:\n  Enter - Send message\n  Ctrl+C/Ctrl+Q - Quit\n  ↑/↓ - Scroll chat\n"))
-	sb.WriteString("\n")
+	welcomeText := "Welcome to Goshi TUI\n\nCommands:\n  Enter - Send message\n  Ctrl+C/Ctrl+Q - Quit\n  ↑/↓ - Scroll chat"
+	sb.WriteString(wrapAndStyle(welcomeText, contentWidth, welcomeStyle))
+	sb.WriteString("\n\n")
 
 	if m.streaming {
-		sb.WriteString(styleStatus("✨ Streaming response...\n\n"))
+		sb.WriteString(wrapAndStyle("✨ Streaming response...", contentWidth, statusStyle))
+		sb.WriteString("\n\n")
 	}
 
 	// Performance optimization: limit displayed messages to last 100
@@ -634,7 +601,9 @@ func (m *model) updateViewportContent() {
 	startIdx := 0
 	if len(m.messages) > maxDisplayMessages {
 		startIdx = len(m.messages) - maxDisplayMessages
-		sb.WriteString(styleStatus(fmt.Sprintf("... (%d earlier messages hidden) ...\n\n", startIdx)))
+		hidden := fmt.Sprintf("... (%d earlier messages hidden) ...", startIdx)
+		sb.WriteString(wrapAndStyle(hidden, contentWidth, statusStyle))
+		sb.WriteString("\n\n")
 	}
 
 	for i := startIdx; i < len(m.messages); i++ {
@@ -644,16 +613,7 @@ func (m *model) updateViewportContent() {
 			content += "▊" // Show cursor for streaming
 		}
 
-		switch msg.Role {
-		case "user":
-			sb.WriteString(styleUserMessage(content))
-		case "system":
-			sb.WriteString(styleSystemMessage(content))
-		case "tool":
-			sb.WriteString(styleToolMessage(content))
-		default: // "assistant" or any other
-			sb.WriteString(styleAssistantMessage(content))
-		}
+		sb.WriteString(formatWrappedMessage(msg.Role, content, messageWidth))
 		sb.WriteString("\n\n")
 	}
 
@@ -662,45 +622,8 @@ func (m *model) updateViewportContent() {
 }
 
 func (m model) renderInput() string {
-	focusIndicator := ""
-	if m.focusedRegion == FocusInput {
-		focusIndicator = " (focused)"
-	}
-
-	// Mode selector display
-	modeDisplay := fmt.Sprintf(" │ Mode: %s (Ctrl+M)", m.mode.String())
-
-	// Toggles display
-	dryRunIndicator := ""
-	if m.toggles.DryRun {
-		dryRunIndicator = " ✓ Dry Run"
-	} else {
-		dryRunIndicator = " ○ Dry Run"
-	}
-
-	deterministic := ""
-	if m.toggles.Deterministic {
-		deterministic = " ✓ Deterministic"
-	} else {
-		deterministic = " ○ Deterministic"
-	}
-
-	toglesDisplay := fmt.Sprintf(" │ Toggles: %s %s", dryRunIndicator, deterministic)
-
-	// Audit panel indicator
-	auditDisplay := ""
-	if m.auditPanelVisible {
-		auditDisplay = " │ Audit: ✓ (Ctrl+A to hide)"
-	} else {
-		auditDisplay = " │ Audit: ○ (Ctrl+A to show)"
-	}
-
 	return fmt.Sprintf(
-		"┌─ Input (Enter: send, Tab: focus, Ctrl+L: mode, Ctrl+D/T: toggle, Ctrl+A: audit, Ctrl+H: help, Ctrl+Q: quit)%s%s%s%s\n%s",
-		focusIndicator,
-		modeDisplay,
-		toglesDisplay,
-		auditDisplay,
+		"┌─\n%s",
 		m.textarea.View(),
 	)
 }
@@ -848,8 +771,8 @@ func (m model) renderOutputStream() string {
 	borderStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("240")).
-		Width(m.layout.OutputStreamWidth - 2).
-		Height(m.layout.OutputStreamHeight - 2)
+		Width(m.layout.OutputStreamWidth).
+		Height(m.layout.OutputStreamHeight)
 
 	if m.focusedRegion == FocusOutputStream {
 		borderStyle = borderStyle.BorderForeground(lipgloss.Color("12"))
@@ -859,6 +782,75 @@ func (m model) renderOutputStream() string {
 	content := m.viewport.View()
 
 	return borderStyle.Render(content)
+}
+
+func (m model) renderTopBar(metrics selfmodel.LawMetrics) string {
+	width := m.layout.TerminalWidth
+	if width <= 0 {
+		return ""
+	}
+
+	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	valueStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+	positiveStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Bold(true)
+	negativeStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
+
+	guardText := "OFF"
+	guardStyle := valueStyle
+	if m.inspectPanel.GuardrailsOn() {
+		guardText = "ON"
+		guardStyle = positiveStyle
+	}
+
+	memPercent := 0.0
+	if m.telemetry.MemoryMax > 0 {
+		memPercent = (float64(m.telemetry.MemoryEntries) / float64(m.telemetry.MemoryMax)) * 100
+	}
+
+	hash := sha256.Sum256([]byte(m.systemPrompt))
+	sessionID := fmt.Sprintf("%X", hash[:3])
+
+	capabilities := m.inspectPanel.Capabilities()
+	toolsValue := "disabled"
+	toolsStyle := negativeStyle
+	fsValue := "denied"
+	fsStyle := negativeStyle
+	netValue := "denied"
+	netStyle := negativeStyle
+	if capabilities != nil {
+		if capabilities.ToolsEnabled {
+			toolsValue = "enabled"
+			toolsStyle = positiveStyle
+		}
+		fsValue = capabilities.FilesystemStatus
+		if capabilities.FilesystemAllowed {
+			fsStyle = positiveStyle
+		}
+		netValue = capabilities.NetworkStatus
+		if capabilities.NetworkAllowed {
+			netStyle = positiveStyle
+		}
+	}
+
+	line1 := joinSegments([]string{
+		formatTopBarKV("Session", sessionID, labelStyle, valueStyle),
+		formatTopBarKV("Temp", fmt.Sprintf("%.1f", m.telemetry.Temperature), labelStyle, valueStyle),
+		formatTopBarKV("Guard", guardText, labelStyle, guardStyle),
+		formatTopBarKV("Laws", fmt.Sprintf("%d", metrics.RuleLines), labelStyle, valueStyle),
+		formatTopBarKV("Constraints", fmt.Sprintf("%d", metrics.ConstraintCount), labelStyle, valueStyle),
+		formatTopBarKV("Entries", fmt.Sprintf("%d/%d", m.telemetry.MemoryEntries, m.telemetry.MemoryMax), labelStyle, valueStyle),
+	}, width)
+
+	line2 := joinSegments([]string{
+		formatTopBarKV("Usage", fmt.Sprintf("%.0f%%", memPercent), labelStyle, valueStyle),
+		formatTopBarKV("Dry Run", onOff(m.toggles.DryRun), labelStyle, valueStyle),
+		formatTopBarKV("Deterministic", onOff(m.toggles.Deterministic), labelStyle, valueStyle),
+		formatTopBarKV("Tools", toolsValue, labelStyle, toolsStyle),
+		formatTopBarKV("Filesystem", fsValue, labelStyle, fsStyle),
+		formatTopBarKV("Network", netValue, labelStyle, netStyle),
+	}, width)
+
+	return lipgloss.JoinVertical(lipgloss.Left, line1, line2)
 }
 
 // Styles using lipgloss
@@ -906,18 +898,213 @@ func styleUserMessage(text string) string {
 	role := roleStyle.Render("USER: ")
 	return userStyle.Render(role + text)
 }
+func styleUserLine(text string) string { return userStyle.Render(text) }
 func styleAssistantMessage(text string) string {
 	role := roleStyle.Render("ASSISTANT: ")
 	return assistantStyle.Render(role + text)
 }
+func styleAssistantLine(text string) string { return assistantStyle.Render(text) }
 func styleSystemMessage(text string) string {
 	role := roleStyle.Render("SYSTEM: ")
 	return systemStyle.Render(role + text)
 }
+func styleSystemLine(text string) string { return systemStyle.Render(text) }
 func styleToolMessage(text string) string {
 	role := roleStyle.Render("TOOL: ")
 	return toolStyle.Render(role + text)
 }
-func styleStatus(text string) string  { return statusStyle.Render(text) }
-func styleError(text string) string   { return errorStyle.Render(text) }
-func styleWelcome(text string) string { return welcomeStyle.Render(text) }
+func styleToolLine(text string) string { return toolStyle.Render(text) }
+func styleStatus(text string) string   { return statusStyle.Render(text) }
+func styleError(text string) string    { return errorStyle.Render(text) }
+func styleWelcome(text string) string  { return welcomeStyle.Render(text) }
+
+func onOff(value bool) string {
+	if value {
+		return "ON"
+	}
+	return "OFF"
+}
+
+func formatTopBarKV(label, value string, labelStyle, valueStyle lipgloss.Style) string {
+	return labelStyle.Render(label) + " " + valueStyle.Render(value)
+}
+
+func joinSegments(segments []string, width int) string {
+	if width <= 0 {
+		return strings.Join(segments, " │ ")
+	}
+
+	sep := " │ "
+	sepWidth := lipgloss.Width(sep)
+	line := ""
+	currentWidth := 0
+	for i, seg := range segments {
+		segWidth := lipgloss.Width(seg)
+		extra := segWidth
+		if i > 0 {
+			extra += sepWidth
+		}
+		if currentWidth > 0 && currentWidth+extra > width {
+			break
+		}
+		if i > 0 {
+			line += sep
+			currentWidth += sepWidth
+		}
+		line += seg
+		currentWidth += segWidth
+	}
+
+	if currentWidth < width {
+		line += strings.Repeat(" ", width-currentWidth)
+	}
+	return line
+}
+
+func wrapPlainText(text string, width int) []string {
+	if width <= 0 {
+		return []string{text}
+	}
+	lines := strings.Split(text, "\n")
+	wrapped := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if line == "" {
+			wrapped = append(wrapped, "")
+			continue
+		}
+
+		indentEnd := 0
+		for indentEnd < len(line) {
+			if line[indentEnd] == ' ' || line[indentEnd] == '\t' {
+				indentEnd++
+				continue
+			}
+			break
+		}
+		indent := line[:indentEnd]
+		rest := strings.TrimLeft(line, " \t")
+		if rest == "" {
+			wrapped = append(wrapped, indent)
+			continue
+		}
+
+		indentWidth := runewidth.StringWidth(indent)
+		wrapWidth := width - indentWidth
+		if wrapWidth < 1 {
+			wrapWidth = 1
+		}
+
+		current := indent
+		currentWidth := indentWidth
+		words := strings.Fields(rest)
+		for _, word := range words {
+			wordWidth := runewidth.StringWidth(word)
+			if wordWidth > wrapWidth {
+				if currentWidth > indentWidth {
+					wrapped = append(wrapped, current)
+					current = indent
+					currentWidth = indentWidth
+				}
+				for _, chunk := range splitLongWord(word, wrapWidth) {
+					wrapped = append(wrapped, indent+chunk)
+				}
+				current = indent
+				currentWidth = indentWidth
+				continue
+			}
+
+			if currentWidth > indentWidth && currentWidth+1+wordWidth > width {
+				wrapped = append(wrapped, current)
+				current = indent + word
+				currentWidth = indentWidth + wordWidth
+				continue
+			}
+
+			if currentWidth == indentWidth {
+				current += word
+				currentWidth += wordWidth
+				continue
+			}
+
+			current += " " + word
+			currentWidth += 1 + wordWidth
+		}
+
+		if current != "" {
+			wrapped = append(wrapped, current)
+		}
+	}
+
+	return wrapped
+}
+
+func splitLongWord(word string, width int) []string {
+	if width < 1 {
+		return []string{word}
+	}
+	chunks := []string{}
+	var buf strings.Builder
+	currentWidth := 0
+	for _, r := range word {
+		w := runewidth.RuneWidth(r)
+		if currentWidth+w > width && buf.Len() > 0 {
+			chunks = append(chunks, buf.String())
+			buf.Reset()
+			currentWidth = 0
+		}
+		buf.WriteRune(r)
+		currentWidth += w
+	}
+	if buf.Len() > 0 {
+		chunks = append(chunks, buf.String())
+	}
+	return chunks
+}
+
+func wrapAndStyle(text string, width int, style lipgloss.Style) string {
+	lines := wrapPlainText(text, width)
+	styled := make([]string, 0, len(lines))
+	for _, line := range lines {
+		styled = append(styled, style.Render(line))
+	}
+	return strings.Join(styled, "\n")
+}
+
+func formatWrappedMessage(role, content string, width int) string {
+	label := "ASSISTANT: "
+	styleFn := styleAssistantLine
+	switch role {
+	case "user":
+		label = "USER: "
+		styleFn = styleUserLine
+	case "system":
+		label = "SYSTEM: "
+		styleFn = styleSystemLine
+	case "tool":
+		label = "TOOL: "
+		styleFn = styleToolLine
+	}
+
+	labelWidth := runewidth.StringWidth(label)
+	wrapWidth := width - labelWidth
+	if wrapWidth < 1 {
+		wrapWidth = 1
+	}
+
+	lines := wrapPlainText(content, wrapWidth)
+	if len(lines) == 0 {
+		lines = []string{""}
+	}
+
+	indent := strings.Repeat(" ", labelWidth)
+	styled := make([]string, 0, len(lines))
+	for i, line := range lines {
+		if i == 0 {
+			styled = append(styled, styleFn(label+line))
+			continue
+		}
+		styled = append(styled, styleFn(indent+line))
+	}
+
+	return strings.Join(styled, "\n")
+}

@@ -3,6 +3,7 @@ package tui
 import (
 	"crypto/sha256"
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -19,11 +20,13 @@ type InspectPanel struct {
 	ready    bool
 
 	// Data sources
-	telemetry    *Telemetry
-	lawsCount    int
-	constCount   int
-	guardrailsOn bool
-	capabilities *Capabilities
+	telemetry     *Telemetry
+	lawsCount     int
+	constCount    int
+	guardrailsOn  bool
+	dryRun        bool
+	deterministic bool
+	capabilities  *Capabilities
 }
 
 // Capabilities represents system capabilities state
@@ -92,9 +95,25 @@ func (p *InspectPanel) UpdateCapabilities(caps *Capabilities) {
 	}
 }
 
+// UpdateToggles updates the input toggle states.
+func (p *InspectPanel) UpdateToggles(dryRun, deterministic bool) {
+	p.dryRun = dryRun
+	p.deterministic = deterministic
+}
+
 // SetGuardrails sets the guardrail status
 func (p *InspectPanel) SetGuardrails(enabled bool) {
 	p.guardrailsOn = enabled
+}
+
+// Capabilities returns the current capabilities state.
+func (p *InspectPanel) Capabilities() *Capabilities {
+	return p.capabilities
+}
+
+// GuardrailsOn reports whether guardrails are enabled.
+func (p *InspectPanel) GuardrailsOn() bool {
+	return p.guardrailsOn
 }
 
 // Render returns the inspect panel content with all 4 sections
@@ -105,10 +124,10 @@ func (p *InspectPanel) Render(systemPrompt string) string {
 		Padding(0, 1)
 
 	// Render all sections as viewport content
-	content := p.renderHeader() + "\n\n" +
-		p.renderMemorySection() + "\n\n" +
+	content := p.renderMemorySection() + "\n\n" +
 		p.renderPromptInfoSection(systemPrompt) + "\n\n" +
 		p.renderGuardrailsSection() + "\n\n" +
+		p.renderTogglesSection() + "\n\n" +
 		p.renderCapabilitiesSection()
 
 	// Update viewport content if ready
@@ -125,23 +144,32 @@ func (p *InspectPanel) Render(systemPrompt string) string {
 		contentWidth = 10
 	}
 
-	styled := borderStyle.Width(contentWidth).Render(viewportContent)
+	styled := borderStyle.Width(p.width).Height(p.height).Render(viewportContent)
 	return styled
 }
 
-func (p *InspectPanel) renderHeader() string {
-	headerStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("12")).
-		Bold(true)
+func (p *InspectPanel) contentWidth() int {
+	width := p.viewport.Width
+	if width <= 0 {
+		width = p.width - 4
+	}
+	if width < 10 {
+		width = 10
+	}
+	return width
+}
 
-	return headerStyle.Render("═══ INSPECT ═══")
+func (p *InspectPanel) formatKV(label, value string, labelStyle, valueStyle lipgloss.Style) string {
+	left := labelStyle.Render(label)
+	right := valueStyle.Render(value)
+	space := p.contentWidth() - lipgloss.Width(left) - lipgloss.Width(right)
+	if space < 1 {
+		space = 1
+	}
+	return left + strings.Repeat(" ", space) + right
 }
 
 func (p *InspectPanel) renderMemorySection() string {
-	sectionStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("14")).
-		Bold(true)
-
 	valueStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("252"))
 
@@ -170,17 +198,23 @@ func (p *InspectPanel) renderMemorySection() string {
 		}
 	}
 
-	return sectionStyle.Render("MEMORY") + "\n" +
-		valueStyle.Render(fmt.Sprintf("Entries: %d/%d", p.telemetry.MemoryEntries, p.telemetry.MemoryMax)) + "\n" +
-		dimStyle.Render(bar) + " " + valueStyle.Render(fmt.Sprintf("%.0f%%", memPercent)) + "\n" +
-		dimStyle.Render("Scope: ") + valueStyle.Render("session")
+	entriesLine := p.formatKV(
+		"Entries",
+		fmt.Sprintf("%d/%d", p.telemetry.MemoryEntries, p.telemetry.MemoryMax),
+		dimStyle,
+		valueStyle,
+	)
+	usageLine := p.formatKV(
+		"Usage",
+		fmt.Sprintf("%.0f%%", memPercent),
+		dimStyle,
+		valueStyle,
+	)
+
+	return entriesLine + "\n" + usageLine + "\n" + dimStyle.Render(bar)
 }
 
 func (p *InspectPanel) renderPromptInfoSection(systemPrompt string) string {
-	sectionStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("14")).
-		Bold(true)
-
 	valueStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("252"))
 
@@ -191,16 +225,11 @@ func (p *InspectPanel) renderPromptInfoSection(systemPrompt string) string {
 	hash := sha256.Sum256([]byte(systemPrompt))
 	policyHash := fmt.Sprintf("%X", hash[:3]) // First 6 hex chars
 
-	return sectionStyle.Render("PROMPT INFO") + "\n" +
-		dimStyle.Render("Policy Hash: ") + valueStyle.Render(policyHash) + "\n" +
-		dimStyle.Render("Temperature: ") + valueStyle.Render(fmt.Sprintf("%.1f", p.telemetry.Temperature))
+	return p.formatKV("Session", policyHash, dimStyle, valueStyle) + "\n" +
+		p.formatKV("Temperature", fmt.Sprintf("%.1f", p.telemetry.Temperature), dimStyle, valueStyle)
 }
 
 func (p *InspectPanel) renderGuardrailsSection() string {
-	sectionStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("14")).
-		Bold(true)
-
 	valueStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("252"))
 
@@ -216,17 +245,12 @@ func (p *InspectPanel) renderGuardrailsSection() string {
 		modeText = "ON"
 	}
 
-	return sectionStyle.Render("GUARDRAILS") + "\n" +
-		dimStyle.Render("Mode: ") + modeStyle.Render(modeText) + "\n" +
-		dimStyle.Render("Laws: ") + valueStyle.Render(fmt.Sprintf("%d", p.lawsCount)) + "\n" +
-		dimStyle.Render("Constraints: ") + valueStyle.Render(fmt.Sprintf("%d", p.constCount))
+	return p.formatKV("Guard", modeText, dimStyle, modeStyle) + "\n" +
+		p.formatKV("Laws", fmt.Sprintf("%d", p.lawsCount), dimStyle, valueStyle) + "\n" +
+		p.formatKV("Constraints", fmt.Sprintf("%d", p.constCount), dimStyle, valueStyle)
 }
 
 func (p *InspectPanel) renderCapabilitiesSection() string {
-	sectionStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("14")).
-		Bold(true)
-
 	dimStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("240"))
 
@@ -237,25 +261,49 @@ func (p *InspectPanel) renderCapabilitiesSection() string {
 		Foreground(lipgloss.Color("9"))
 
 	// Tools status
-	toolsStatus := deniedStyle.Render("disabled")
+	toolsValue := "disabled"
+	toolsStyle := deniedStyle
 	if p.capabilities.ToolsEnabled {
-		toolsStatus = enabledStyle.Render("enabled")
+		toolsValue = "enabled"
+		toolsStyle = enabledStyle
 	}
 
 	// Filesystem status
-	fsStatus := deniedStyle.Render(p.capabilities.FilesystemStatus)
+	fsValue := p.capabilities.FilesystemStatus
+	fsStyle := deniedStyle
 	if p.capabilities.FilesystemAllowed {
-		fsStatus = enabledStyle.Render(p.capabilities.FilesystemStatus)
+		fsStyle = enabledStyle
 	}
 
 	// Network status
-	netStatus := deniedStyle.Render(p.capabilities.NetworkStatus)
+	netValue := p.capabilities.NetworkStatus
+	netStyle := deniedStyle
 	if p.capabilities.NetworkAllowed {
-		netStatus = enabledStyle.Render(p.capabilities.NetworkStatus)
+		netStyle = enabledStyle
 	}
 
-	return sectionStyle.Render("CAPABILITIES") + "\n" +
-		dimStyle.Render("Tools: ") + toolsStatus + "\n" +
-		dimStyle.Render("Filesystem: ") + fsStatus + "\n" +
-		dimStyle.Render("Network: ") + netStatus
+	return p.formatKV("Tools", toolsValue, dimStyle, toolsStyle) + "\n" +
+		p.formatKV("Filesystem", fsValue, dimStyle, fsStyle) + "\n" +
+		p.formatKV("Network", netValue, dimStyle, netStyle)
+}
+
+func (p *InspectPanel) renderTogglesSection() string {
+	valueStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("252"))
+
+	dimStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("240"))
+
+	dryRunText := "OFF"
+	if p.dryRun {
+		dryRunText = "ON"
+	}
+
+	deterministicText := "OFF"
+	if p.deterministic {
+		deterministicText = "ON"
+	}
+
+	return p.formatKV("Dry Run", dryRunText, dimStyle, valueStyle) + "\n" +
+		p.formatKV("Deterministic", deterministicText, dimStyle, valueStyle)
 }

@@ -48,6 +48,8 @@ rejects cross-architecture installation, and retains previous installs under
 `$HOME/.local/share/goshi/installs/`. The current `install-info.txt` in that tool's
 share directory records source path, commit, dirty state, Go version, and SHA-256.
 Raw `go build` and release/CI scripts remain compile/package-only.
+The Makefile preserves inherited `GOFLAGS`, including the shared Mac build
+parallelism setting (`-p=6`). Explicit Go command flags can override it.
 Run `python3 scripts/test-local-install.py` for isolated installer regression checks.
 
 The default self-model is installed at `$HOME/.local/share/goshi/goshi.self.model.yaml`; a local project self-model still takes precedence.
@@ -644,3 +646,7 @@ make build
 ## License
 
 MIT
+
+## Optional companion tools
+
+`goshi tools doctor` checks installations; `tools plan` previews workflows and `tools run` collects local reports in a new private directory. Normal commands continue to work without other Starlit tools. AI feedback requires a separate explicit report/peer invocation. See [CLI integration](docs/TOOL_INTEGRATION.md) for recipes, limits and snapshot ownership.

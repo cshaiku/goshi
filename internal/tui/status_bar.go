@@ -6,37 +6,37 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// StatusBar renders the two-line status bar at the bottom
+// StatusBar renders the single-line status bar at the bottom
 type StatusBar struct {
-	telemetry       *Telemetry
-	lawsCount       int
-	constraintCount int
-	guardrailsOn    bool
+	telemetry *Telemetry
+	mode      string
 }
 
 // NewStatusBar creates a new status bar
 func NewStatusBar(telemetry *Telemetry) *StatusBar {
 	return &StatusBar{
-		telemetry:    telemetry,
-		guardrailsOn: true, // Default: guardrails active
+		telemetry: telemetry,
 	}
 }
 
 // UpdateMetrics updates the law and constraint counts
 func (s *StatusBar) UpdateMetrics(laws, constraints int) {
-	s.lawsCount = laws
-	s.constraintCount = constraints
+	// No-op: status bar no longer renders law/constraint counts.
 }
 
 // SetGuardrails sets the guardrail status
 func (s *StatusBar) SetGuardrails(enabled bool) {
-	s.guardrailsOn = enabled
+	// No-op: status bar no longer renders guardrails state.
 }
 
-// Render returns the two-line status bar
+// UpdateMode updates the active mode label.
+func (s *StatusBar) UpdateMode(mode string) {
+	s.mode = mode
+}
+
+// Render returns the single-line status bar
 func (s *StatusBar) Render(width int) string {
-	line1 := s.renderLine1()
-	line2 := s.renderLine2()
+	line := s.renderLine()
 
 	// Style the status bar
 	style := lipgloss.NewStyle().
@@ -44,41 +44,17 @@ func (s *StatusBar) Render(width int) string {
 		Width(width).
 		Padding(0, 1)
 
-	return style.Render(line1) + "\n" + style.Render(line2)
+	return style.Render(line)
 }
 
-// renderLine1 renders the first status line
-// Format: goshi | Laws: 312 | C: 9 | ACTIVE | 8k/16k | temp: 0.2 | mem: 14/128
-func (s *StatusBar) renderLine1() string {
-	tokensUsedK := s.telemetry.TokensUsed / 1024
-	tokensLimitK := s.telemetry.TokensLimit / 1024
-
+// renderLine renders the status line
+// Format: Chat | latency: 423ms | cost: $0.0031 | llm: ollama | model: qwen2.5-coder-7b | Ctrl+H: help
+func (s *StatusBar) renderLine() string {
 	return fmt.Sprintf(
-		"goshi │ Laws: %d │ C: %d │ %s │ %dk/%dk │ temp: %.1f │ mem: %d/%d",
-		s.lawsCount,
-		s.constraintCount,
-		s.telemetry.Status,
-		tokensUsedK,
-		tokensLimitK,
-		s.telemetry.Temperature,
-		s.telemetry.MemoryEntries,
-		s.telemetry.MemoryMax,
-	)
-}
-
-// renderLine2 renders the second status line
-// Format: lat: 423ms | cost: $0.0031 | guard: ON | llm: ollama | model: qwen2.5-coder-7b
-func (s *StatusBar) renderLine2() string {
-	guardStatus := "ON"
-	if !s.guardrailsOn {
-		guardStatus = "OFF"
-	}
-
-	return fmt.Sprintf(
-		"lat: %dms │ cost: $%.4f │ guard: %s │ llm: %s │ model: %s",
+		"%s │ latency: %dms │ cost: $%.4f │ llm: %s │ model: %s │ Ctrl+H: help",
+		s.mode,
 		s.telemetry.LatencyMS(),
 		s.telemetry.SessionCost,
-		guardStatus,
 		s.telemetry.Backend,
 		s.telemetry.ModelName,
 	)

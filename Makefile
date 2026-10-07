@@ -6,7 +6,7 @@ APP_NAME := goshi
 
 GO       ?= go
 PREFIX   ?= $(HOME)/.local
-GOFLAGS  :=
+GOFLAGS  ?=
 
 # ------------------------------------------------------------------------------
 # Default target

@@ -22,7 +22,10 @@ pre-existing working-tree changes. This repo may contain another task's edits.
   for installation changes. Avoid invoking network/AI/upload operations for a startup smoke.
 - Update this file and README when install paths, flags, or resource lookup change.
 - User-local PATH must precede Homebrew for our own tools. This Mac's shared PATH
-  helper is `~/.config/sdf/tool-path.sh`; launchd applies it to newly launched apps.
+  helper is `~/.config/starlit-digital/tool-path.sh`; launchd applies it to newly launched apps.
   Other machines need `$HOME/.local/bin` on PATH. Do not assume the Mac helper exists.
 - Source dumps use the global `sourcedump` command; do not upload or publish source
   as part of building or installing.
+
+- Preserve inherited `GOFLAGS` in Makefiles; this Mac uses shared six-job build
+  defaults from `~/.config/starlit-digital/build-defaults.sh`. Per-command overrides remain valid.

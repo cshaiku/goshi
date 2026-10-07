@@ -89,8 +89,8 @@ func TestStatusBar(t *testing.T) {
 		t.Error("expected non-empty view")
 	}
 
-	if !strings.Contains(view, "goshi") {
-		t.Error("expected view to contain 'goshi'")
+	if !strings.Contains(view, "Ctrl+H: help") {
+		t.Error("expected view to contain help hint")
 	}
 }
 
@@ -250,8 +250,8 @@ func TestLayoutCalculations(t *testing.T) {
 		t.Errorf("expected terminal height 40, got %d", layout.TerminalHeight)
 	}
 
-	// Check split ratio (70/30)
-	expectedOutput := int(float64(100) * 0.70)
+	// Output takes full width now that the sidebar is removed
+	expectedOutput := 100
 	if layout.OutputStreamWidth != expectedOutput {
 		t.Errorf("expected output width %d, got %d", expectedOutput, layout.OutputStreamWidth)
 	}
@@ -309,24 +309,23 @@ func TestStatusBarRender(t *testing.T) {
 	telemetry.ModelName = "test-model"
 
 	statusBar := NewStatusBar(telemetry)
-	statusBar.UpdateMetrics(312, 9)
-
+	statusBar.UpdateMode("Chat")
 	rendered := statusBar.Render(100)
 
 	if rendered == "" {
 		t.Error("expected non-empty status bar")
 	}
 
-	if !strings.Contains(rendered, "goshi") {
-		t.Error("expected status bar to contain 'goshi'")
+	if !strings.Contains(rendered, "Chat") {
+		t.Error("expected status bar to contain mode")
 	}
 
-	if !strings.Contains(rendered, "Laws: 312") {
-		t.Error("expected status bar to contain law count")
+	if !strings.Contains(rendered, "latency:") {
+		t.Error("expected status bar to contain latency")
 	}
 
-	if !strings.Contains(rendered, "C: 9") {
-		t.Error("expected status bar to contain constraint count")
+	if !strings.Contains(rendered, "cost:") {
+		t.Error("expected status bar to contain cost")
 	}
 
 	if !strings.Contains(rendered, "ollama") {
@@ -335,6 +334,10 @@ func TestStatusBarRender(t *testing.T) {
 
 	if !strings.Contains(rendered, "test-model") {
 		t.Error("expected status bar to contain model name")
+	}
+
+	if !strings.Contains(rendered, "Ctrl+H") {
+		t.Error("expected status bar to contain help hint")
 	}
 }
 
@@ -350,24 +353,20 @@ func TestInspectPanelStub(t *testing.T) {
 		t.Error("expected non-empty inspect panel")
 	}
 
-	if !strings.Contains(rendered, "INSPECT") {
-		t.Error("expected panel to contain INSPECT header")
+	if !strings.Contains(rendered, "Entries") {
+		t.Error("expected panel to contain memory entries")
 	}
 
-	if !strings.Contains(rendered, "MEMORY") {
-		t.Error("expected panel to contain MEMORY section")
+	if !strings.Contains(rendered, "Session") {
+		t.Error("expected panel to contain session hash")
 	}
 
-	if !strings.Contains(rendered, "PROMPT INFO") {
-		t.Error("expected panel to contain PROMPT INFO section")
+	if !strings.Contains(rendered, "Guard") {
+		t.Error("expected panel to contain guard status")
 	}
 
-	if !strings.Contains(rendered, "GUARDRAILS") {
-		t.Error("expected panel to contain GUARDRAILS section")
-	}
-
-	if !strings.Contains(rendered, "CAPABILITIES") {
-		t.Error("expected panel to contain CAPABILITIES section")
+	if !strings.Contains(rendered, "Tools") {
+		t.Error("expected panel to contain tools status")
 	}
 }
 
@@ -386,14 +385,6 @@ func TestFocusCycling(t *testing.T) {
 
 	if m.focusedRegion != FocusOutputStream {
 		t.Errorf("expected focus on output stream after Tab, got %d", m.focusedRegion)
-	}
-
-	// Pressing Tab again
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyTab})
-	m = updated.(model)
-
-	if m.focusedRegion != FocusInspectPanel {
-		t.Errorf("expected focus on inspect panel after second Tab, got %d", m.focusedRegion)
 	}
 
 	// Pressing Tab again should wrap back to input
@@ -440,10 +431,6 @@ func TestInspectPanelMemorySection(t *testing.T) {
 	if !strings.Contains(rendered, "42/128") {
 		t.Error("expected memory usage to show 42/128")
 	}
-
-	if !strings.Contains(rendered, "session") {
-		t.Error("expected memory scope to be 'session'")
-	}
 }
 
 func TestInspectPanelPromptInfo(t *testing.T) {
@@ -459,9 +446,9 @@ func TestInspectPanelPromptInfo(t *testing.T) {
 		t.Error("expected temperature 0.7 to be displayed")
 	}
 
-	// Policy hash should be present (6 hex chars)
-	if !strings.Contains(rendered, "Policy Hash") {
-		t.Error("expected policy hash label")
+	// Session hash should be present (6 hex chars)
+	if !strings.Contains(rendered, "Session") {
+		t.Error("expected session hash label")
 	}
 }
 
@@ -474,8 +461,8 @@ func TestInspectPanelGuardrails(t *testing.T) {
 
 	rendered := panel.Render("test")
 
-	if !strings.Contains(rendered, "ON") {
-		t.Error("expected guardrails to show ON")
+	if !strings.Contains(rendered, "Guard") {
+		t.Error("expected guard label")
 	}
 
 	if !strings.Contains(rendered, "312") {
@@ -554,11 +541,11 @@ func TestInspectPanelAllSections(t *testing.T) {
 
 	rendered := panel.Render("complete test")
 
-	// Check all sections are present
-	sections := []string{"MEMORY", "PROMPT INFO", "GUARDRAILS", "CAPABILITIES"}
-	for _, section := range sections {
-		if !strings.Contains(rendered, section) {
-			t.Errorf("expected panel to contain %s section", section)
+	// Check key fields are present
+	fields := []string{"Entries", "Session", "Guard", "Tools", "Filesystem", "Network"}
+	for _, field := range fields {
+		if !strings.Contains(rendered, field) {
+			t.Errorf("expected panel to contain %s", field)
 		}
 	}
 }
@@ -576,11 +563,6 @@ func TestInspectPanelScrolling(t *testing.T) {
 	// The panel should have content (even if truncated)
 	if len(rendered) == 0 {
 		t.Error("expected panel to have content")
-	}
-
-	// Header should be visible at the top
-	if !strings.Contains(rendered, "INSPECT") {
-		t.Error("expected header to be visible")
 	}
 
 	// Simulate scroll down (viewport Update with KeyDown)
@@ -699,27 +681,31 @@ func TestModeString(t *testing.T) {
 	}
 }
 
-func TestModeDisplayInInput(t *testing.T) {
+func TestModeDisplayInStatusBar(t *testing.T) {
 	m := newModel("test", nil)
+	statusBar := NewStatusBar(m.telemetry)
 
 	// Test Chat mode display
-	inputView := m.renderInput()
-	if !strings.Contains(inputView, "Mode: Chat") {
-		t.Errorf("expected Chat mode in input display, got: %s", inputView)
+	statusBar.UpdateMode(m.mode.String())
+	line := statusBar.Render(100)
+	if !strings.Contains(line, "Chat") {
+		t.Errorf("expected Chat mode in status bar, got: %s", line)
 	}
 
 	// Switch to Command mode
 	m.mode = ModeCommand
-	inputView = m.renderInput()
-	if !strings.Contains(inputView, "Mode: Command") {
-		t.Errorf("expected Command mode in input display, got: %s", inputView)
+	statusBar.UpdateMode(m.mode.String())
+	line = statusBar.Render(100)
+	if !strings.Contains(line, "Command") {
+		t.Errorf("expected Command mode in status bar, got: %s", line)
 	}
 
 	// Switch to Diff mode
 	m.mode = ModeDiff
-	inputView = m.renderInput()
-	if !strings.Contains(inputView, "Mode: Diff") {
-		t.Errorf("expected Diff mode in input display, got: %s", inputView)
+	statusBar.UpdateMode(m.mode.String())
+	line = statusBar.Render(100)
+	if !strings.Contains(line, "Diff") {
+		t.Errorf("expected Diff mode in status bar, got: %s", line)
 	}
 }
 
@@ -766,28 +752,32 @@ func TestInputToggles(t *testing.T) {
 
 func TestTogglesDisplayInInput(t *testing.T) {
 	m := newModel("test", nil)
+	m.inspectPanel.SetSize(30, 20)
 
 	// Toggles off
-	inputView := m.renderInput()
-	if !strings.Contains(inputView, "○ Dry Run") {
-		t.Errorf("expected off indicator for Dry Run, got: %s", inputView)
+	m.inspectPanel.UpdateToggles(m.toggles.DryRun, m.toggles.Deterministic)
+	panel := m.inspectPanel.Render("test")
+	if !strings.Contains(panel, "Dry Run") || !strings.Contains(panel, "OFF") {
+		t.Errorf("expected Dry Run off in inspect panel, got: %s", panel)
 	}
-	if !strings.Contains(inputView, "○ Deterministic") {
-		t.Errorf("expected off indicator for Deterministic, got: %s", inputView)
+	if !strings.Contains(panel, "Deterministic") || !strings.Contains(panel, "OFF") {
+		t.Errorf("expected Deterministic off in inspect panel, got: %s", panel)
 	}
 
 	// Turn on Dry Run
 	m.toggles.DryRun = true
-	inputView = m.renderInput()
-	if !strings.Contains(inputView, "✓ Dry Run") {
-		t.Errorf("expected on indicator for Dry Run, got: %s", inputView)
+	m.inspectPanel.UpdateToggles(m.toggles.DryRun, m.toggles.Deterministic)
+	panel = m.inspectPanel.Render("test")
+	if !strings.Contains(panel, "Dry Run") || !strings.Contains(panel, "ON") {
+		t.Errorf("expected Dry Run on in inspect panel, got: %s", panel)
 	}
 
 	// Turn on Deterministic
 	m.toggles.Deterministic = true
-	inputView = m.renderInput()
-	if !strings.Contains(inputView, "✓ Deterministic") {
-		t.Errorf("expected on indicator for Deterministic, got: %s", inputView)
+	m.inspectPanel.UpdateToggles(m.toggles.DryRun, m.toggles.Deterministic)
+	panel = m.inspectPanel.Render("test")
+	if !strings.Contains(panel, "Deterministic") || !strings.Contains(panel, "ON") {
+		t.Errorf("expected Deterministic on in inspect panel, got: %s", panel)
 	}
 }
 
@@ -998,8 +988,8 @@ func TestAccessibilityFocusIndicators(t *testing.T) {
 	// Test that renderInput shows focus information
 	m.focusedRegion = FocusInput
 	inputView := m.renderInput()
-	if !strings.Contains(inputView, "focused") {
-		t.Error("expected focus indicator in input region")
+	if strings.Contains(inputView, "focused") {
+		t.Error("did not expect focus indicator in input region")
 	}
 
 	// Test that renderOutputStream shows focus information

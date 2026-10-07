@@ -28,9 +28,7 @@ func NewHelpPanel() *HelpPanel {
 
 // updateContent renders the help text
 func (p *HelpPanel) updateContent() {
-	p.content = `╔═══════════════════════════════════════╗
-║      KEYBOARD SHORTCUTS - HELP        ║
-╚═══════════════════════════════════════╝
+	p.content = `HELP
 
 SENDING & INPUT:
   Enter              - Send message
@@ -50,12 +48,7 @@ PANELS & VIEWS:
 
 QUIT:
   Ctrl+Q             - Quit application
-  Ctrl+C             - Quit application
-
-SHORTCUTS IN DIFFERENT CONTEXTS:
-  • When focused on output: ↑/↓ scrolls
-  • When focused on inspect: ↑/↓ scrolls
-  • When focused on input: text editing + shortcuts above`
+	Ctrl+C             - Quit application`
 
 	p.viewport.SetContent(p.content)
 }
@@ -111,7 +104,7 @@ func (p *HelpPanel) Render() string {
 	style := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("5")).
-		Padding(0, 1)
+		Padding(1, 1)
 
 	return style.Render(
 		lipgloss.NewStyle().
