@@ -27,3 +27,7 @@ Qualification applies to the declared graph runtime paths. It does not establish
 all tools' native installers, live AI providers, SDK closure, application UI,
 physical-venue behavior, or remote service reproducibility. AI diagnosis remains
 explicit and advisory. Shell hooks are opt-in and limited to the tools namespace.
+
+Release follow-up: the standard-library vulnerability gate on Go 1.26.6 requires
+Go 1.26.9. Release builds select that patched toolchain through go.mod. Existing
+language minimums remain unchanged except Clyde’s explicit installer pin.

@@ -4,7 +4,7 @@ import "fmt"
 
 // Version information set at build time via -ldflags.
 var (
-	Version   = "1.7.0"
+	Version   = "1.7.1"
 	Commit    = "dev"
 	BuildTime = "unknown"
 	Dirty     = "false"
