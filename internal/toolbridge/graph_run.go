@@ -220,11 +220,11 @@ func graphPolicy(caller string, p GraphPlan, allowAI bool) error {
 		}
 		if caller == "goshi" {
 			if n.Kind == "ai" || len(n.Argv) < 2 || n.Argv[0] != "goshi" || (n.Argv[1] != "doctor" && n.Argv[1] != "version") {
-				return errors.New("Goshi graph execution is limited to its own doctor/version diagnostics")
+				return errors.New("goshi graph execution is limited to its own doctor/version diagnostics")
 			}
 			for _, a := range n.Argv[2:] {
 				if a != "--json" && a != "--format" && a != "json" {
-					return errors.New("Goshi graph diagnostics accept only JSON output flags")
+					return errors.New("goshi graph diagnostics accept only JSON output flags")
 				}
 			}
 		}

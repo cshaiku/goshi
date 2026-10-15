@@ -547,7 +547,7 @@ func BuildGraphPlan(root, workflow string, imports []GraphImport) (GraphPlan, er
 			}
 			for _, edge := range doc.Edges {
 				if !known[edge.From] || !known[edge.To] {
-					return fail(errors.New("Loom edge references an unknown component"))
+					return fail(errors.New("loom edge references an unknown component"))
 				}
 				p.Links = append(p.Links, GraphLink{From: "loom:" + edge.From, To: "loom:" + edge.To, Relation: "uses", Source: path})
 			}
@@ -571,7 +571,7 @@ func BuildGraphPlan(root, workflow string, imports []GraphImport) (GraphPlan, er
 			}
 			manifestRoot, _ = graphAbsolute(manifestRoot)
 			if manifestRoot != p.Root {
-				return fail(errors.New("Clyde manifest belongs to another repository"))
+				return fail(errors.New("clyde manifest belongs to another repository"))
 			}
 			for _, f := range doc.Files {
 				if len(f.SHA256) != 64 {
@@ -649,7 +649,7 @@ func BuildGraphPlan(root, workflow string, imports []GraphImport) (GraphPlan, er
 					from, ok := mapping[edge.From]
 					to, ok2 := mapping[edge.To]
 					if !ok || !ok2 {
-						return fail(errors.New("Vigil prerequisite cannot be executed"))
+						return fail(errors.New("vigil prerequisite cannot be executed"))
 					}
 					for i := range p.Workflow.Nodes {
 						if p.Workflow.Nodes[i].ID == from {

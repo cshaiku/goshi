@@ -73,7 +73,7 @@ func GraphCommand(args []string, caller, version string, out, errout io.Writer) 
 	allowed := map[string]string{"schema": "kind", "plan": "repo workflow loom clyde-manifest impact", "explain": "plan run-dir format", "context": "plan stage", "run": "plan run-dir approve-digest allow-ai", "resume": "plan run-dir approve-digest allow-ai", "verify": "run-dir"}
 	list, ok := allowed[op]
 	if !ok {
-		return graphCLIError(errout, "invalid_operation", errors.New(graphUsage), 2)
+		return graphCLIError(errout, "invalid_operation", errors.New("unknown graph operation; use tools graph help"), 2)
 	}
 	var flagErr error
 	fs.Visit(func(f *flag.Flag) {
