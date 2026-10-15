@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const Version = "1.0.0"
+const Version = "1.2.0"
 const outputLimit = 2 << 20
 
 type Tool struct {
@@ -50,6 +50,30 @@ func Handle(args []string, caller, callerVersion string, stdout, stderr io.Write
 	if len(args) == 0 || args[0] != "tools" {
 		return false, 0
 	}
+	if len(args) > 1 && args[1] == "graph" {
+		return true, GraphCommand(args[2:], caller, callerVersion, stdout, stderr)
+	}
+	if len(args) > 1 && args[1] == "complete" {
+		words := args[2:]
+		if len(words) > 0 && words[0] == "--" {
+			words = words[1:]
+		}
+		for _, candidate := range ToolCompletions(words) {
+			fmt.Fprintln(stdout, candidate)
+		}
+		return true, 0
+	}
+	if len(args) > 1 && args[1] == "completion" {
+		if len(args) != 3 {
+			fmt.Fprintln(stderr, "usage: tools completion bash|zsh|fish|powershell")
+			return true, 2
+		}
+		if err := toolCompletion(args[2], caller, stdout); err != nil {
+			fmt.Fprintln(stderr, err)
+			return true, 2
+		}
+		return true, 0
+	}
 	err := command(args[1:], caller, callerVersion, stdout)
 	if err != nil {
 		fmt.Fprintln(stderr, "tools:", err)
@@ -60,7 +84,7 @@ func Handle(args []string, caller, callerVersion string, stdout, stderr io.Write
 
 func command(args []string, caller, callerVersion string, out io.Writer) error {
 	if len(args) == 0 || args[0] == "help" || args[0] == "--help" {
-		_, err := fmt.Fprintln(out, "Optional local tool integration (bridge "+Version+")\nUsage: <tool> tools doctor\n       <tool> tools plan|run repo-review --repo PATH [--ui FILE] [--with-vigil]\n       <tool> tools plan|run ui-review --ui FILE\n       <tool> tools plan|run log-review --log FILE\nRun requires --output-dir NEW_DIRECTORY. JSON reports; local recipes do not use AI, SSH, upload or install.\n       <tool> tools plan|run feedback-review --report FILE --peer NAME\nFeedback is opt-in and sends the chosen report to that configured AI peer.\nCompanion tools are optional for standalone commands. Plan shows exact argv and missing tools.")
+		_, err := fmt.Fprintln(out, "Optional local tool integration (bridge "+Version+")\nShared workflows: <tool> tools graph help\nShell support: <tool> tools completion bash|zsh|fish|powershell\nUsage: <tool> tools doctor\n       <tool> tools plan|run repo-review --repo PATH [--ui FILE] [--with-vigil]\n       <tool> tools plan|run ui-review --ui FILE\n       <tool> tools plan|run log-review --log FILE\nRun requires --output-dir NEW_DIRECTORY. JSON reports; local recipes do not use AI, SSH, upload or install.\n       <tool> tools plan|run feedback-review --report FILE --peer NAME\nFeedback is opt-in and sends the chosen report to that configured AI peer.\nCompanion tools are optional for standalone commands. Plan shows exact argv and missing tools.")
 		return err
 	}
 	if args[0] == "identity" {

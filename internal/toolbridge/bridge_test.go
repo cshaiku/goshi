@@ -28,8 +28,20 @@ func TestSnapshotReceipt(t *testing.T) {
 	if err := json.Unmarshal(data, &receipt); err != nil {
 		t.Fatal(err)
 	}
-	if receipt.Version != Version || len(receipt.Files) != 3 {
+	if receipt.Version != Version || len(receipt.Files) < 10 {
 		t.Fatal("invalid snapshot receipt")
+	}
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		name := entry.Name()
+		if strings.HasSuffix(name, ".go") || name == "LICENSE" || strings.HasPrefix(name, "graph_contract_") && strings.HasSuffix(name, ".json") {
+			if _, ok := receipt.Files[name]; !ok {
+				t.Fatalf("unrecorded snapshot file: %s", name)
+			}
+		}
 	}
 	for name, want := range receipt.Files {
 		b, err := os.ReadFile(name)

@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Structural wire schema. The CLI also validates IDs, references, dependency cycles, bounds and operation-specific invariants.",
+  "properties": {
+    "budget_seconds": {
+      "type": "integer"
+    },
+    "context": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "stages": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "type": "object"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "environment": {
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "inputs": {
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "name": {
+      "type": "string"
+    },
+    "nodes": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "argv": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "inputs": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "max_attempts": {
+            "type": "integer"
+          },
+          "needs": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "peer": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "replay_safe": {
+            "type": "boolean"
+          },
+          "report": {
+            "type": "string"
+          },
+          "report_from": {
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "exclude_dirs": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                },
+                "root": {
+                  "type": "string"
+                },
+                "suffixes": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "root",
+                "suffixes"
+              ],
+              "type": "object"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "timeout_seconds": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "when": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "max_attempts",
+          "replay_safe",
+          "timeout_seconds"
+        ],
+        "type": "object"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "schema": {
+      "const": "starlit.workflow.v1"
+    },
+    "scopes": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "exclude_dirs": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "root": {
+            "type": "string"
+          },
+          "suffixes": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "root",
+          "suffixes"
+        ],
+        "type": "object"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "tool_inputs": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "environment": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "files": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "optional_files": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "runtimes": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "nodes",
+    "schema"
+  ],
+  "title": "starlit.workflow.v1",
+  "type": "object"
+}

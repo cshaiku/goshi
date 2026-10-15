@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.7.0 — 2026-10-15
+
+- Track declared tool configuration, runtimes, SDK identity files and environment in graph fingerprints.
+- Add shell completion hooks and shared protocol/native recovery checks on macOS, Windows and Linux.
+
+- Add shared graph workflows with checkpoint recovery, selective resume, bounded context and explicit advisory AI diagnosis.
+
+- Add graph protocol 1.1.0 / bridge 1.2.0: portable plans, scoped fingerprints, native report imports, bounded context, checkpointed execution and selective resume.
+- Verify immutable evidence and explicit replay-safe retries. Optional AI diagnosis cannot qualify checks or apply repairs.
+- Preserve native tool authority and standalone operation; execution remains limited to explicitly approved plans.
+
 All notable changes to goshi are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]

@@ -1,0 +1,529 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Structural wire schema. The CLI also validates IDs, references, dependency cycles, bounds and operation-specific invariants.",
+  "properties": {
+    "digest": {
+      "type": "string"
+    },
+    "entities": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "unresolved": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "kind"
+        ],
+        "type": "object"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "environment_sha256": {
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "missing": {
+            "type": "boolean"
+          },
+          "path": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "imports": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "path"
+        ],
+        "type": "object"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "links": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "relation": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "relation",
+          "source",
+          "to"
+        ],
+        "type": "object"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "node_fingerprints": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "order": {
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "platform": {
+      "type": "string"
+    },
+    "protocol_version": {
+      "type": "string"
+    },
+    "root": {
+      "type": "string"
+    },
+    "schema": {
+      "const": "starlit.plan.v1"
+    },
+    "tools": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "environment_sha256": {
+            "type": "string"
+          },
+          "inputs": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "missing": {
+                  "type": "boolean"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "sha256": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "sha256"
+              ],
+              "type": "object"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "runtimes": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "sha256": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "path",
+                "sha256"
+              ],
+              "type": "object"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "path",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "workflow": {
+      "additionalProperties": false,
+      "properties": {
+        "budget_seconds": {
+          "type": "integer"
+        },
+        "context": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "stages": {
+                "items": {
+                  "type": "string"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "path"
+            ],
+            "type": "object"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "environment": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "inputs": {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "nodes": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "argv": {
+                "items": {
+                  "type": "string"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "inputs": {
+                "items": {
+                  "type": "string"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              },
+              "kind": {
+                "type": "string"
+              },
+              "max_attempts": {
+                "type": "integer"
+              },
+              "needs": {
+                "items": {
+                  "type": "string"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              },
+              "peer": {
+                "type": "string"
+              },
+              "prompt": {
+                "type": "string"
+              },
+              "replay_safe": {
+                "type": "boolean"
+              },
+              "report": {
+                "type": "string"
+              },
+              "report_from": {
+                "type": "string"
+              },
+              "scopes": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "exclude_dirs": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "root": {
+                      "type": "string"
+                    },
+                    "suffixes": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "root",
+                    "suffixes"
+                  ],
+                  "type": "object"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              },
+              "timeout_seconds": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "when": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "max_attempts",
+              "replay_safe",
+              "timeout_seconds"
+            ],
+            "type": "object"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "schema": {
+          "type": "string"
+        },
+        "scopes": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "exclude_dirs": {
+                "items": {
+                  "type": "string"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              },
+              "root": {
+                "type": "string"
+              },
+              "suffixes": {
+                "items": {
+                  "type": "string"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "root",
+              "suffixes"
+            ],
+            "type": "object"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "tool_inputs": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "environment": {
+                "items": {
+                  "type": "string"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              },
+              "files": {
+                "items": {
+                  "type": "string"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "optional_files": {
+                "items": {
+                  "type": "string"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              },
+              "runtimes": {
+                "items": {
+                  "type": "string"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "nodes",
+        "schema"
+      ],
+      "type": "object"
+    },
+    "workflow_path": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "digest",
+    "entities",
+    "environment_sha256",
+    "files",
+    "imports",
+    "links",
+    "node_fingerprints",
+    "order",
+    "platform",
+    "protocol_version",
+    "root",
+    "schema",
+    "tools",
+    "warnings",
+    "workflow",
+    "workflow_path"
+  ],
+  "title": "starlit.plan.v1",
+  "type": "object"
+}

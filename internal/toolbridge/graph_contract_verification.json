@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Structural wire schema. The CLI also validates IDs, references, dependency cycles, bounds and operation-specific invariants.",
+  "properties": {
+    "consistent": {
+      "type": "boolean"
+    },
+    "diagnostic": {
+      "type": "string"
+    },
+    "fresh": {
+      "type": "boolean"
+    },
+    "nodes": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "artifacts": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "report_artifact": {
+            "type": "string"
+          },
+          "reused": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "artifacts",
+          "attempts",
+          "fingerprint",
+          "reason",
+          "reused",
+          "status"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    },
+    "plan_digest": {
+      "type": "string"
+    },
+    "qualification": {
+      "type": "string"
+    },
+    "schema": {
+      "const": "starlit.verification.v1"
+    },
+    "status": {
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "consistent",
+    "fresh",
+    "nodes",
+    "plan_digest",
+    "qualification",
+    "schema",
+    "status",
+    "warnings"
+  ],
+  "title": "starlit.verification.v1",
+  "type": "object"
+}

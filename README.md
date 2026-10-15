@@ -650,3 +650,11 @@ MIT
 ## Optional companion tools
 
 `goshi tools doctor` checks installations; `tools plan` previews workflows and `tools run` collects local reports in a new private directory. Normal commands continue to work without other Starlit tools. AI feedback requires a separate explicit report/peer invocation. See [CLI integration](docs/TOOL_INTEGRATION.md) for recipes, limits and snapshot ownership.
+
+## Shared graph workflows
+
+`goshi tools graph help` exposes shared workflow schemas, connected source/context
+plans, checkpointed execution, selective resume and evidence verification.
+Execution uses exact approved argument arrays; optional AI diagnosis is advisory.
+Goshi retains its self-only diagnostic boundary.
+[Contracts and usage](docs/GRAPH_WORKFLOWS.md).

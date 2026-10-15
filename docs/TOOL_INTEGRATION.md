@@ -41,3 +41,8 @@ Feedback sends the explicitly selected file through the running local bram daemo
 ## Snapshot ownership
 
 The standalone bridge is authored in Starlit-Digital/bram internal/toolbridge. Other repos carry the 0BSD source/tests and a SHA-256 UPSTREAM.json receipt. Snapshot tests detect drift. From the bram checkout, scripts/sync-toolbridge.py --repo /path/to/another/repo refreshes an explicitly selected, unchanged snapshot; it refuses local snapshot edits. No Go dependency on another CLI repo is required. Each CLI can be built, installed and used independently.
+
+## Graph workflows
+
+`tools graph` adds shared explain/plan/context/run/resume/verify contracts.
+See [graph workflows](GRAPH_WORKFLOWS.md) for input scopes, recovery, evidence and AI boundaries.

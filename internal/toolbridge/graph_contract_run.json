@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Structural wire schema. The CLI also validates IDs, references, dependency cycles, bounds and operation-specific invariants.",
+  "properties": {
+    "artifacts": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "nodes": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "artifacts": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "report_artifact": {
+            "type": "string"
+          },
+          "reused": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "artifacts",
+          "attempts",
+          "fingerprint",
+          "reason",
+          "reused",
+          "status"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    },
+    "plan_digest": {
+      "type": "string"
+    },
+    "qualification": {
+      "type": "string"
+    },
+    "root": {
+      "type": "string"
+    },
+    "runtime_ms": {
+      "type": "integer"
+    },
+    "schema": {
+      "const": "starlit.run.v1"
+    },
+    "status": {
+      "type": "string"
+    },
+    "updated": {
+      "type": "string"
+    },
+    "workflow": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "artifacts",
+    "nodes",
+    "plan_digest",
+    "qualification",
+    "root",
+    "runtime_ms",
+    "schema",
+    "status",
+    "updated",
+    "workflow"
+  ],
+  "title": "starlit.run.v1",
+  "type": "object"
+}

@@ -1,11 +1,28 @@
 {
   "schemaVersion": 1,
   "source": "Starlit-Digital/bram/internal/toolbridge",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "license": "0BSD",
   "files": {
-    "bridge.go": "0e1b4747b880a2fa298716a1f32fee4a4e0dbd39ddafc65b5c984bc1471a10cf",
-    "bridge_test.go": "93e7db13dc8c9afd5e423ead95d7975d0cb0160edc192d8c616491bea9041c03",
-    "LICENSE": "e6af32b798d5e0b53be4b047a63aef451b80c99c62724ecf024e0b05eec5756e"
+    "LICENSE": "e6af32b798d5e0b53be4b047a63aef451b80c99c62724ecf024e0b05eec5756e",
+    "bridge.go": "5fe8617cc794ebc8da9ae2948cdc63bec5b81aa02453ed83436507fa0af2ea42",
+    "bridge_test.go": "5f48d4d8542253bcb51e5fe60da3c005ddc94cf2532d8c477a6749fa48238a94",
+    "completion.go": "7ab0bac8a8db1491ee22872d2b82bce1cd41b84709c85f19edc04513d7978fc0",
+    "completion_test.go": "2cff094dd3c9de69a85da44979058169235fa4e80df1a58dee4a24c8e5715826",
+    "graph.go": "53673cf199c1b966ffcd71e6c1f0df3f80a5fd9385742388a8d96ff3041127e6",
+    "graph_cli.go": "89de78f1e425e08746d99d03300dc6074d8419e544298a8f67fa3e159108f5a7",
+    "graph_contract_plan.json": "5cc32d5b7012b8e1f8ce84362ccba3c561c4195849cb9cf30a11d86c67485104",
+    "graph_contract_run.json": "2bb81fe4111d8302c93a79bc3d7b944a2c2ae1b84d5e162790cc84a4c46566da",
+    "graph_contract_test.go": "3d4ae54b8bda1e33331db4308c66ed7e9e9d9e492cd64e0285bade2499308cdf",
+    "graph_contract_verification.json": "785d7aba8baffe5d70aed7928c5762727a558d00ca998f7e0ab8b9e294a3a910",
+    "graph_contract_workflow.json": "919fe9576cd36ad71c6946d040bd025c2650c8e79050a4ee62ecd83593d295c0",
+    "graph_freshness.go": "6af6bc3a727202916d6f96dfbc7135693ceaf8d28dc5f215318a7c62e7c9a73e",
+    "graph_freshness_test.go": "a77485f713d623654d0ef54f754333f7f36a67ea655a6a58014429387b454de1",
+    "graph_lock_other.go": "1a0de954e825895d1099b25eb890a92e383d2710126e05397cd7987e78d11b0b",
+    "graph_lock_unix.go": "ce79294d8547807a0eacbc7aaca2fcb7c744ec68c50255f36ca37e9236b1e09e",
+    "graph_lock_windows.go": "ef9a1a11cf7212b92a4d543b0aac541f1495fd2a0ac9fbc62aac39faa90b8efd",
+    "graph_native_test.go": "1bd54024c9e357ebf3f3c1a2d8d60bb7f3c9cc00c49ad6ca1c0b31c4758f22a5",
+    "graph_run.go": "05ab0ad1703a17eabbdd401eeba2fafc1bc9561229badbeb0b38d7d1b51380e6",
+    "graph_test.go": "3b8e5f3caada30012ab05c2e4e9d0a02785750ce32c81974fdec9bb33eec6f44"
   }
 }
